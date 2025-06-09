@@ -51,7 +51,7 @@ const Login = () => {
         setErrors({ ...newErrors, login: error });
         setIsSubmitting(false);
       } else {
-        // Navigate will happen automatically when user state changes
+        // Navigation will happen automatically when user state changes
         navigate('/dashboard');
       }
     }

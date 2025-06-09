@@ -20,7 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('Initial session:', session?.user?.email);
       setUser(session?.user || null);
       setLoading(false);
     };
@@ -31,8 +32,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
+        
         setUser(session?.user || null);
-        setLoading(false);
+        
+        // Only set loading to false after handling the auth state change
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          setLoading(false);
+        }
       }
     );
 
@@ -41,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      setLoading(true);
+      // Don't set loading here - let onAuthStateChange handle it
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -49,11 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Login error:', error);
+        // Only set loading to false on error since success will be handled by onAuthStateChange
         setLoading(false);
         return { error: 'E-mail ou senha inválidos. Por favor, tente novamente.' };
       }
 
-      // User will be set automatically by the auth state change listener
+      // Don't manually set user - onAuthStateChange will handle it
       return {};
     } catch (error) {
       console.error('Unexpected login error:', error);
@@ -64,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      setLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -76,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: error.message };
       }
 
-      setLoading(false);
+      // Don't manually set user - onAuthStateChange will handle it
       return {};
     } catch (error) {
       console.error('Unexpected signup error:', error);
@@ -87,16 +93,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Logout error:', error);
       }
-      // User will be set to null automatically by the auth state change listener
+      // Don't manually set user or loading - onAuthStateChange will handle it
     } catch (error) {
       console.error('Unexpected logout error:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
