@@ -92,12 +92,12 @@ const Planos = () => {
   };
 
   const handleSelectPlan = async (planoId: string) => {
-    if (planoId === currentPlan) {
-      return; // Already selected
+    if (planoId === currentPlan || loading) {
+      return;
     }
 
     if (planoId === 'autonomo' || planoId === 'basico') {
-      // For MVP, just update the plan directly
+      // For basic plans, just update directly
       try {
         setLoading(true);
         const { error } = await supabase
@@ -145,13 +145,15 @@ const Planos = () => {
       if (error) throw error;
 
       if (data?.url) {
-        // Open Stripe checkout in a new tab
-        window.open(data.url, '_blank');
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
         
         toast({
           title: "Redirecionando para pagamento",
           description: "Você será redirecionado para finalizar o pagamento.",
         });
+      } else {
+        throw new Error('URL de checkout não recebida');
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -180,6 +182,8 @@ const Planos = () => {
       if (data?.url) {
         // Open customer portal in a new tab
         window.open(data.url, '_blank');
+      } else {
+        throw new Error('URL do portal não recebida');
       }
     } catch (error) {
       console.error('Error opening customer portal:', error);
@@ -259,7 +263,7 @@ const Planos = () => {
                             onClick={handleManageSubscription}
                             disabled={loading}
                           >
-                            Gerenciar Assinatura
+                            {loading ? 'Carregando...' : 'Gerenciar Assinatura'}
                           </Button>
                         )}
                       </div>

@@ -35,49 +35,78 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { toast } = useToast()
 
   useEffect(() => {
+    let mounted = true
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+        
+        if (mounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Error getting session:', error)
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      console.log('Auth state change:', event, session?.user?.email)
+      
+      if (mounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setLoading(false)
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Create or update profile
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.name || session.user.email!,
-            updated_at: new Date().toISOString(),
-          })
-        
-        if (error) {
-          console.error('Error creating/updating profile:', error)
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Create or update profile
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .upsert({
+                id: session.user.id,
+                email: session.user.email!,
+                name: session.user.user_metadata?.name || session.user.email!,
+                updated_at: new Date().toISOString(),
+              })
+            
+            if (error) {
+              console.error('Error creating/updating profile:', error)
+            }
+          } catch (error) {
+            console.error('Error in profile upsert:', error)
+          }
         }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
     try {
+      setLoading(true)
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        setLoading(false)
         return { success: false, error: error.message }
       }
 
@@ -88,12 +117,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       return { success: true }
     } catch (error) {
+      setLoading(false)
       return { success: false, error: 'Erro inesperado durante o login' }
     }
   }
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
+      setLoading(true)
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -105,6 +136,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
 
       if (error) {
+        setLoading(false)
         return { success: false, error: error.message }
       }
 
@@ -112,26 +144,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         title: "Conta criada com sucesso!",
         description: "Verifique seu e-mail para confirmar a conta",
       })
-
+      
+      setLoading(false)
       return { success: true }
     } catch (error) {
+      setLoading(false)
       return { success: false, error: 'Erro inesperado durante o cadastro' }
     }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      })
-    } else {
-      toast({
-        title: "Logout realizado",
-        description: "Até logo!",
-      })
+    try {
+      setLoading(true)
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        toast({
+          title: "Erro ao sair",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Logout realizado",
+          description: "Até logo!",
+        })
+      }
+    } catch (error) {
+      console.error('Error signing out:', error)
+    } finally {
+      setLoading(false)
     }
   }
 

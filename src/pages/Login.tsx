@@ -13,7 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '', login: '' });
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -24,6 +24,8 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
     
     const newErrors = { email: '', password: '', login: '' };
     
@@ -43,15 +45,15 @@ const Login = () => {
     
     // If validation passes, attempt login
     if (!newErrors.email && !newErrors.password) {
-      setLoading(true);
+      setIsSubmitting(true);
       const result = await signIn(email, password);
-      setLoading(false);
       
       if (result.success) {
         navigate('/dashboard');
       } else {
         setErrors(prev => ({ ...prev, login: result.error || 'E-mail ou senha inválidos. Por favor, tente novamente.' }));
       }
+      setIsSubmitting(false);
     }
   };
 
@@ -79,7 +81,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={errors.email ? 'border-red-500' : ''}
-                disabled={loading}
+                disabled={isSubmitting}
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -96,13 +98,13 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={errors.password ? 'border-red-500' : ''}
-                  disabled={loading}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  disabled={loading}
+                  disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -121,9 +123,9 @@ const Login = () => {
             <Button 
               type="submit" 
               className="w-full bg-pink-600 hover:bg-pink-700"
-              disabled={loading}
+              disabled={isSubmitting}
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
 
