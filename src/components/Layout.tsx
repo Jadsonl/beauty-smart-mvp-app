@@ -1,7 +1,6 @@
 
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface LayoutProps {
@@ -9,7 +8,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout } = useApp();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,8 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/configuracoes', label: 'Configurações', icon: '⚙️' },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
 
@@ -35,14 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="w-64 bg-white shadow-lg h-screen fixed left-0 top-0 z-10">
         <div className="p-6 border-b">
           <h1 className="text-2xl font-bold text-pink-600">BelezaSmart</h1>
-          <p className="text-sm text-gray-600 mt-1">{user?.name}</p>
-          {user?.testeGratuito && (
-            <div className="mt-2 p-2 bg-pink-50 rounded-lg">
-              <p className="text-xs text-pink-700">
-                Teste Premium: {user.diasRestantes} dias restantes
-              </p>
-            </div>
-          )}
+          <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
         </div>
         
         <nav className="mt-6">

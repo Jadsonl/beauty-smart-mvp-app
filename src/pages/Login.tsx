@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
@@ -13,7 +13,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '', login: '' });
-  const { login } = useApp();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
@@ -21,7 +22,7 @@ const Login = () => {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const newErrors = { email: '', password: '', login: '' };
@@ -42,11 +43,16 @@ const Login = () => {
     
     // If validation passes, attempt login
     if (!newErrors.email && !newErrors.password) {
-      const success = login(email, password);
-      if (success) {
-        navigate('/dashboard');
+      setIsSubmitting(true);
+      
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        setErrors({ ...newErrors, login: error });
+        setIsSubmitting(false);
       } else {
-        setErrors({ ...newErrors, login: 'E-mail ou senha inválidos. Por favor, tente novamente.' });
+        // Navigate will happen automatically when user state changes
+        navigate('/dashboard');
       }
     }
   };
@@ -75,6 +81,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={errors.email ? 'border-red-500' : ''}
+                disabled={isSubmitting}
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -91,11 +98,13 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={errors.password ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -111,8 +120,12 @@ const Login = () => {
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700">
-              Entrar
+            <Button 
+              type="submit" 
+              className="w-full bg-pink-600 hover:bg-pink-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
 
@@ -136,8 +149,7 @@ const Login = () => {
             
             <div className="bg-gray-50 p-3 rounded-md text-xs text-gray-600">
               <p className="font-medium mb-1">Para testar o sistema:</p>
-              <p>E-mail: teste@belezasmart.com</p>
-              <p>Senha: senha123</p>
+              <p>Crie uma conta ou use credenciais válidas</p>
             </div>
           </div>
         </CardContent>
