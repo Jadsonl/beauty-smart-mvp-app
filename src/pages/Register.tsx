@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,8 +28,9 @@ const Register = () => {
     confirmPassword: '',
     register: ''
   });
+  const [loading, setLoading] = useState(false);
   
-  const { register } = useApp();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
@@ -48,7 +49,6 @@ const Register = () => {
   };
 
   const passwordCriteria = getPasswordCriteria(formData.password);
-  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,7 +59,7 @@ const Register = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const newErrors = {
@@ -100,17 +100,16 @@ const Register = () => {
     
     // If validation passes, attempt registration
     if (!Object.values(newErrors).some(error => error)) {
-      const success = register({
-        ...formData,
-        fromTest: isTestMode
-      });
+      setLoading(true);
+      const result = await signUp(formData.email, formData.password, formData.name);
+      setLoading(false);
       
-      if (success) {
-        navigate('/dashboard');
+      if (result.success) {
+        navigate('/login');
       } else {
         setErrors(prev => ({
           ...prev,
-          register: 'Este e-mail já está cadastrado. Por favor, utilize outro e-mail ou faça login.'
+          register: result.error || 'Este e-mail já está cadastrado. Por favor, utilize outro e-mail ou faça login.'
         }));
       }
     }
@@ -154,6 +153,7 @@ const Register = () => {
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className={errors.name ? 'border-red-500' : ''}
+                disabled={loading}
               />
               {errors.name && (
                 <p className="text-sm text-red-500">{errors.name}</p>
@@ -169,6 +169,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className={errors.email ? 'border-red-500' : ''}
+                disabled={loading}
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -185,11 +186,13 @@ const Register = () => {
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   className={errors.password ? 'border-red-500' : ''}
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={loading}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -209,11 +212,13 @@ const Register = () => {
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                   className={errors.confirmPassword ? 'border-red-500' : ''}
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={loading}
                 >
                   {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -242,62 +247,6 @@ const Register = () => {
                       Pelo menos 6 caracteres
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={16} 
-                      className={cn(
-                        passwordCriteria.uppercase ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-sm',
-                      passwordCriteria.uppercase ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Uma letra maiúscula
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={16} 
-                      className={cn(
-                        passwordCriteria.lowercase ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-sm',
-                      passwordCriteria.lowercase ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Uma letra minúscula
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={16} 
-                      className={cn(
-                        passwordCriteria.number ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-sm',
-                      passwordCriteria.number ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Um número
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={16} 
-                      className={cn(
-                        passwordCriteria.special ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-sm',
-                      passwordCriteria.special ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Um caractere especial
-                    </span>
-                  </div>
                 </div>
               </div>
             )}
@@ -308,8 +257,12 @@ const Register = () => {
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700">
-              {isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta'}
+            <Button 
+              type="submit" 
+              className="w-full bg-pink-600 hover:bg-pink-700"
+              disabled={loading}
+            >
+              {loading ? 'Criando conta...' : (isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta')}
             </Button>
           </form>
 

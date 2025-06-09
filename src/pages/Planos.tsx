@@ -1,14 +1,20 @@
 
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const Planos = () => {
-  const { user, changePlano } = useApp();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState('autonomo');
 
   const planos = [
     {
@@ -62,13 +68,128 @@ const Planos = () => {
     }
   ];
 
-  const handleSelectPlan = (planoId: string) => {
-    if (planoId === user?.plano) {
+  useEffect(() => {
+    if (user) {
+      fetchCurrentPlan();
+    }
+  }, [user]);
+
+  const fetchCurrentPlan = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('subscription_plan')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+      if (data?.subscription_plan) {
+        setCurrentPlan(data.subscription_plan);
+      }
+    } catch (error) {
+      console.error('Error fetching current plan:', error);
+    }
+  };
+
+  const handleSelectPlan = async (planoId: string) => {
+    if (planoId === currentPlan) {
       return; // Already selected
     }
-    
-    if (window.confirm(`Confirma a mudança para o plano ${planos.find(p => p.id === planoId)?.nome}?`)) {
-      changePlano(planoId as 'autonomo' | 'basico' | 'premium');
+
+    if (planoId === 'autonomo' || planoId === 'basico') {
+      // For MVP, just update the plan directly
+      try {
+        setLoading(true);
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            subscription_plan: planoId,
+            subscription_status: 'active',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', user?.id);
+
+        if (error) throw error;
+
+        setCurrentPlan(planoId);
+        toast({
+          title: "Plano atualizado!",
+          description: `Você agora está no plano ${planos.find(p => p.id === planoId)?.nome}.`,
+        });
+      } catch (error) {
+        console.error('Error updating plan:', error);
+        toast({
+          title: "Erro ao atualizar plano",
+          description: "Não foi possível atualizar seu plano. Tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else if (planoId === 'premium') {
+      // For premium plan, redirect to Stripe checkout
+      handlePremiumCheckout();
+    }
+  };
+
+  const handlePremiumCheckout = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
+        
+        toast({
+          title: "Redirecionando para pagamento",
+          description: "Você será redirecionado para finalizar o pagamento.",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: "Erro ao processar pagamento",
+        description: "Não foi possível iniciar o processo de pagamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Open customer portal in a new tab
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+      toast({
+        title: "Erro ao abrir portal",
+        description: "Não foi possível abrir o portal de gerenciamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,23 +202,12 @@ const Planos = () => {
           <p className="text-gray-600 mt-2">
             Escolha o plano ideal para o seu negócio. Você pode alterar a qualquer momento.
           </p>
-          
-          {user?.testeGratuito && (
-            <div className="mt-6 p-4 bg-pink-50 border border-pink-200 rounded-lg max-w-2xl mx-auto">
-              <h3 className="font-semibold text-pink-800 mb-2">🎉 Teste Premium Ativo!</h3>
-              <p className="text-pink-700">
-                Você tem {user.diasRestantes} dias restantes do seu teste gratuito do Plano Premium.
-                Aproveite todas as funcionalidades sem compromisso!
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {planos.map((plano) => {
-            const isCurrentPlan = user?.plano === plano.id;
-            const isPremiumAndOnTrial = plano.id === 'premium' && user?.testeGratuito;
+            const isCurrentPlan = currentPlan === plano.id;
             
             return (
               <Card 
@@ -135,13 +245,24 @@ const Planos = () => {
                   
                   <div className="pt-4">
                     {isCurrentPlan ? (
-                      <Button 
-                        className="w-full" 
-                        variant="outline"
-                        disabled
-                      >
-                        {isPremiumAndOnTrial ? 'Teste Ativo' : 'Plano Atual'}
-                      </Button>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          disabled
+                        >
+                          Plano Atual
+                        </Button>
+                        {plano.id === 'premium' && (
+                          <Button 
+                            className="w-full bg-pink-600 hover:bg-pink-700" 
+                            onClick={handleManageSubscription}
+                            disabled={loading}
+                          >
+                            Gerenciar Assinatura
+                          </Button>
+                        )}
+                      </div>
                     ) : (
                       <Button 
                         className={cn(
@@ -151,8 +272,9 @@ const Planos = () => {
                             : "bg-gray-900 hover:bg-gray-800"
                         )}
                         onClick={() => handleSelectPlan(plano.id)}
+                        disabled={loading}
                       >
-                        Escolher Plano
+                        {loading ? 'Processando...' : 'Escolher Plano'}
                       </Button>
                     )}
                   </div>
@@ -190,14 +312,6 @@ const Planos = () => {
               <p className="text-sm text-gray-600">
                 Sem fidelidade! Você pode cancelar a qualquer momento. 
                 Após o cancelamento, você mantém acesso até o final do período pago.
-              </p>
-            </div>
-            
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 text-center">
-                <strong>Funcionalidade de pagamentos será implementada em breve.</strong>
-                <br />
-                Por enquanto, você pode explorar e testar todas as funcionalidades gratuitamente.
               </p>
             </div>
           </CardContent>
