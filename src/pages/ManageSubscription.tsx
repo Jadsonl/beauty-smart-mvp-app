@@ -37,10 +37,10 @@ const ManageSubscription = () => {
 
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8 px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Assinatura</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gerenciar Assinatura</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">
             Visualize e gerencie sua assinatura BelezaSmart
           </p>
         </div>
@@ -49,15 +49,15 @@ const ManageSubscription = () => {
           <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CreditCard className="h-6 w-6" />
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                  <CreditCard className="h-5 w-5 sm:h-6 sm:w-6" />
                   <span>Status da Assinatura</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm sm:text-base">
                   Informações sobre sua assinatura atual
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">Status</span>
                   <Badge variant={subscriptionData.subscribed ? "default" : "secondary"}>
@@ -92,7 +92,7 @@ const ManageSubscription = () => {
                   <Button 
                     onClick={handleOpenPortal}
                     disabled={loading}
-                    className="w-full flex items-center space-x-2"
+                    className="w-full flex items-center justify-center space-x-2 text-sm sm:text-base py-2 sm:py-3"
                   >
                     <Settings className="h-4 w-4" />
                     <span>
@@ -109,15 +109,15 @@ const ManageSubscription = () => {
             {!subscriptionData.subscribed && (
               <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle>Nenhuma Assinatura Ativa</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Nenhuma Assinatura Ativa</CardTitle>
+                  <CardDescription className="text-sm sm:text-base">
                     Você não possui uma assinatura ativa no momento
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button 
                     onClick={() => window.location.href = '/planos'}
-                    className="w-full bg-pink-600 hover:bg-pink-700"
+                    className="w-full bg-pink-600 hover:bg-pink-700 text-sm sm:text-base py-2 sm:py-3"
                   >
                     Ver Planos Disponíveis
                   </Button>
@@ -127,7 +127,7 @@ const ManageSubscription = () => {
           </div>
         ) : (
           <div className="text-center">
-            <p className="text-gray-600">Carregando informações da assinatura...</p>
+            <p className="text-gray-600 text-sm sm:text-base">Carregando informações da assinatura...</p>
           </div>
         )}
       </div>
