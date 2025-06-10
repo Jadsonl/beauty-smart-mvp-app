@@ -1,12 +1,12 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import LandingPage from './LandingPage';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user } = useApp();
+  const { user } = useAuth();
 
   useEffect(() => {
     // If user is logged in, redirect to dashboard

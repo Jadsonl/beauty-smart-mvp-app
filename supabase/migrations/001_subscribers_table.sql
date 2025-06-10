@@ -1,6 +1,6 @@
 
--- Criar tabela de assinantes
-CREATE TABLE public.subscribers (
+-- Create subscribers table to track subscription information
+CREATE TABLE IF NOT EXISTS public.subscribers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL UNIQUE,
@@ -12,25 +12,24 @@ CREATE TABLE public.subscribers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Habilitar Row Level Security
+-- Enable Row Level Security
 ALTER TABLE public.subscribers ENABLE ROW LEVEL SECURITY;
 
--- Política para usuários verem suas próprias assinaturas
+-- Create policy for users to view their own subscription info
 CREATE POLICY "select_own_subscription" ON public.subscribers
 FOR SELECT
 USING (user_id = auth.uid() OR email = auth.email());
 
--- Política para Edge Functions atualizarem assinaturas
-CREATE POLICY "update_subscription" ON public.subscribers
+-- Create policy for edge functions to update subscription info
+CREATE POLICY "update_own_subscription" ON public.subscribers
 FOR UPDATE
 USING (true);
 
--- Política para Edge Functions inserirem assinaturas
+-- Create policy for edge functions to insert subscription info
 CREATE POLICY "insert_subscription" ON public.subscribers
 FOR INSERT
 WITH CHECK (true);
 
--- Índices para performance
-CREATE INDEX idx_subscribers_user_id ON public.subscribers(user_id);
-CREATE INDEX idx_subscribers_email ON public.subscribers(email);
-CREATE INDEX idx_subscribers_stripe_customer_id ON public.subscribers(stripe_customer_id);
+-- Add stripe_customer_id column to profiles table if it doesn't exist
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
