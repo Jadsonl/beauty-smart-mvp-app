@@ -16,6 +16,7 @@ import Servicos from "./pages/Servicos";
 import Financeiro from "./pages/Financeiro";
 import Estoque from "./pages/Estoque";
 import Planos from "./pages/Planos";
+import ManageSubscription from "./pages/ManageSubscription";
 import Configuracoes from "./pages/Configuracoes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
@@ -67,6 +68,11 @@ const App = () => (
             <Route path="/planos" element={
               <ProtectedRoute>
                 <Planos />
+              </ProtectedRoute>
+            } />
+            <Route path="/manage-subscription" element={
+              <ProtectedRoute>
+                <ManageSubscription />
               </ProtectedRoute>
             } />
             <Route path="/configuracoes" element={

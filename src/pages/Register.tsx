@@ -1,11 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,8 +28,9 @@ const Register = () => {
     confirmPassword: '',
     register: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { register } = useApp();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
@@ -53,13 +54,12 @@ const Register = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Clear specific field error when user starts typing
     if (errors[field as keyof typeof errors]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const newErrors = {
@@ -70,26 +70,22 @@ const Register = () => {
       register: ''
     };
     
-    // Validate name
     if (!formData.name.trim()) {
       newErrors.name = 'Por favor, insira seu nome completo.';
     }
     
-    // Validate email
     if (!formData.email) {
       newErrors.email = 'Por favor, insira seu e-mail.';
     } else if (!validateEmail(formData.email)) {
       newErrors.email = 'Por favor, insira um e-mail válido.';
     }
     
-    // Validate password
     if (!formData.password) {
       newErrors.password = 'Por favor, insira uma senha.';
     } else if (formData.password.length < 6) {
       newErrors.password = 'A senha deve ter pelo menos 6 caracteres.';
     }
     
-    // Validate confirm password
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Por favor, confirme sua senha.';
     } else if (formData.password !== formData.confirmPassword) {
@@ -98,20 +94,16 @@ const Register = () => {
     
     setErrors(newErrors);
     
-    // If validation passes, attempt registration
     if (!Object.values(newErrors).some(error => error)) {
-      const success = register({
-        ...formData,
-        fromTest: isTestMode
-      });
+      setIsSubmitting(true);
       
-      if (success) {
-        navigate('/dashboard');
+      const { error } = await signUp(formData.email, formData.password);
+      
+      if (error) {
+        setErrors(prev => ({ ...prev, register: error }));
+        setIsSubmitting(false);
       } else {
-        setErrors(prev => ({
-          ...prev,
-          register: 'Este e-mail já está cadastrado. Por favor, utilize outro e-mail ou faça login.'
-        }));
+        navigate('/dashboard');
       }
     }
   };
@@ -154,6 +146,7 @@ const Register = () => {
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className={errors.name ? 'border-red-500' : ''}
+                disabled={isSubmitting}
               />
               {errors.name && (
                 <p className="text-sm text-red-500">{errors.name}</p>
@@ -169,6 +162,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className={errors.email ? 'border-red-500' : ''}
+                disabled={isSubmitting}
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -185,11 +179,13 @@ const Register = () => {
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   className={errors.password ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -209,11 +205,13 @@ const Register = () => {
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                   className={errors.confirmPassword ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  disabled={isSubmitting}
                 >
                   {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -223,7 +221,6 @@ const Register = () => {
               )}
             </div>
 
-            {/* Password Criteria */}
             {formData.password && (
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Critérios da senha:</p>
@@ -308,8 +305,12 @@ const Register = () => {
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700">
-              {isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta'}
+            <Button 
+              type="submit" 
+              className="w-full bg-pink-600 hover:bg-pink-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Criando conta...' : (isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta')}
             </Button>
           </form>
 
