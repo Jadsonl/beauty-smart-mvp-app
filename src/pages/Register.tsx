@@ -5,16 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Register = () => {
   const [searchParams] = useSearchParams();
   const isTestMode = searchParams.get('test') === 'true';
   
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
+    businessType: '',
+    businessName: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -22,7 +28,10 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({
-    name: '',
+    fullName: '',
+    businessType: '',
+    businessName: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -33,9 +42,23 @@ const Register = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
+  const businessTypes = [
+    { value: 'salon', label: 'Salão de Beleza' },
+    { value: 'barbershop', label: 'Barbearia' },
+    { value: 'clinic', label: 'Clínica Estética' },
+    { value: 'spa', label: 'Spa' },
+    { value: 'freelancer', label: 'Profissional Autônomo' },
+    { value: 'other', label: 'Outro' }
+  ];
+
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string) => {
+    const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
+    return phoneRegex.test(phone) || phone.length >= 10;
   };
 
   const getPasswordCriteria = (password: string) => {
@@ -59,19 +82,52 @@ const Register = () => {
     }
   };
 
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      const match = numbers.match(/^(\d{0,2})(\d{0,5})(\d{0,4})$/);
+      if (match) {
+        return !match[2] ? match[1] : `(${match[1]}) ${match[2]}${match[3] ? `-${match[3]}` : ''}`;
+      }
+    }
+    return value;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    handleInputChange('phone', formatted);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const newErrors = {
-      name: '',
+      fullName: '',
+      businessType: '',
+      businessName: '',
+      phone: '',
       email: '',
       password: '',
       confirmPassword: '',
       register: ''
     };
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'Por favor, insira seu nome completo.';
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Por favor, insira seu nome completo.';
+    }
+
+    if (!formData.businessType) {
+      newErrors.businessType = 'Por favor, selecione o tipo de negócio.';
+    }
+
+    if (!formData.businessName.trim()) {
+      newErrors.businessName = 'Por favor, insira o nome do seu negócio.';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Por favor, insira seu telefone.';
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = 'Por favor, insira um telefone válido.';
     }
     
     if (!formData.email) {
@@ -97,13 +153,48 @@ const Register = () => {
     if (!Object.values(newErrors).some(error => error)) {
       setIsSubmitting(true);
       
-      const { error } = await signUp(formData.email, formData.password);
-      
-      if (error) {
-        setErrors(prev => ({ ...prev, register: error }));
-        setIsSubmitting(false);
-      } else {
+      try {
+        // Primeiro, criar conta no Supabase Auth
+        const { error: authError, data } = await signUp(formData.email, formData.password);
+        
+        if (authError) {
+          setErrors(prev => ({ ...prev, register: authError }));
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Se o usuário foi criado com sucesso, salvar perfil
+        if (data?.user) {
+          console.log('Usuário criado, salvando perfil...', data.user.id);
+          
+          // Salvar dados do perfil na tabela profiles
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              email: formData.email,
+              full_name: formData.fullName,
+              business_type: formData.businessType,
+              business_name: formData.businessName,
+              phone: formData.phone
+            });
+
+          if (profileError) {
+            console.error('Erro ao salvar perfil:', profileError);
+            toast.error('Conta criada, mas erro ao salvar perfil. Você pode atualizar depois.');
+          } else {
+            console.log('Perfil salvo com sucesso!');
+            toast.success(isTestMode ? 'Teste gratuito iniciado com sucesso!' : 'Conta criada com sucesso!');
+          }
+        }
+
+        // Redirecionar para dashboard
         navigate('/dashboard');
+        
+      } catch (error) {
+        console.error('Erro no registro:', error);
+        setErrors(prev => ({ ...prev, register: 'Erro inesperado. Tente novamente.' }));
+        setIsSubmitting(false);
       }
     }
   };
@@ -114,12 +205,12 @@ const Register = () => {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-pink-600 rounded-lg"></div>
-            <span className="text-2xl font-bold text-pink-600">BelezaSmart</span>
+            <span className="text-xl sm:text-2xl font-bold text-pink-600">BelezaSmart</span>
           </div>
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-xl sm:text-2xl">
             {isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             {isTestMode 
               ? '30 dias de acesso premium gratuito' 
               : 'Cadastre-se para acessar a plataforma'
@@ -129,8 +220,8 @@ const Register = () => {
         <CardContent>
           {isTestMode && (
             <div className="mb-6 p-4 bg-pink-50 border border-pink-200 rounded-lg">
-              <h3 className="font-semibold text-pink-800 mb-2">🎉 Teste Premium Gratuito!</h3>
-              <p className="text-sm text-pink-700">
+              <h3 className="font-semibold text-pink-800 mb-2 text-sm">🎉 Teste Premium Gratuito!</h3>
+              <p className="text-xs sm:text-sm text-pink-700">
                 Você terá acesso completo ao plano Premium por 30 dias, sem compromisso.
               </p>
             </div>
@@ -138,23 +229,79 @@ const Register = () => {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo / Razão Social</Label>
+              <Label htmlFor="fullName" className="text-sm">Nome Completo *</Label>
               <Input
-                id="name"
+                id="fullName"
                 type="text"
-                placeholder="Seu nome ou nome do salão"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className={errors.name ? 'border-red-500' : ''}
+                placeholder="Seu nome completo"
+                value={formData.fullName}
+                onChange={(e) => handleInputChange('fullName', e.target.value)}
+                className={errors.fullName ? 'border-red-500' : ''}
                 disabled={isSubmitting}
               />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name}</p>
+              {errors.fullName && (
+                <p className="text-xs text-red-500">{errors.fullName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessType" className="text-sm">Tipo de Negócio *</Label>
+              <Select 
+                value={formData.businessType} 
+                onValueChange={(value) => handleInputChange('businessType', value)}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className={errors.businessType ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Selecione o tipo de negócio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {businessTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.businessType && (
+                <p className="text-xs text-red-500">{errors.businessType}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessName" className="text-sm">Nome do Negócio *</Label>
+              <Input
+                id="businessName"
+                type="text"
+                placeholder="Nome do seu salão/estabelecimento"
+                value={formData.businessName}
+                onChange={(e) => handleInputChange('businessName', e.target.value)}
+                className={errors.businessName ? 'border-red-500' : ''}
+                disabled={isSubmitting}
+              />
+              {errors.businessName && (
+                <p className="text-xs text-red-500">{errors.businessName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm">Telefone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(11) 99999-9999"
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                className={errors.phone ? 'border-red-500' : ''}
+                disabled={isSubmitting}
+                maxLength={15}
+              />
+              {errors.phone && (
+                <p className="text-xs text-red-500">{errors.phone}</p>
               )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="text-sm">E-mail *</Label>
               <Input
                 id="email"
                 type="email"
@@ -165,12 +312,12 @@ const Register = () => {
                 disabled={isSubmitting}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
+                <p className="text-xs text-red-500">{errors.email}</p>
               )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-sm">Senha *</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -187,16 +334,16 @@ const Register = () => {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   disabled={isSubmitting}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-500">{errors.password}</p>
+                <p className="text-xs text-red-500">{errors.password}</p>
               )}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Label htmlFor="confirmPassword" className="text-sm">Confirmar Senha *</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -213,27 +360,27 @@ const Register = () => {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   disabled={isSubmitting}
                 >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+                <p className="text-xs text-red-500">{errors.confirmPassword}</p>
               )}
             </div>
 
             {formData.password && (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700">Critérios da senha:</p>
+                <p className="text-xs font-medium text-gray-700">Critérios da senha:</p>
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <Check 
-                      size={16} 
+                      size={14} 
                       className={cn(
                         passwordCriteria.length ? 'text-green-500' : 'text-gray-400'
                       )} 
                     />
                     <span className={cn(
-                      'text-sm',
+                      'text-xs',
                       passwordCriteria.length ? 'text-green-700' : 'text-gray-600'
                     )}>
                       Pelo menos 6 caracteres
@@ -241,13 +388,13 @@ const Register = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Check 
-                      size={16} 
+                      size={14} 
                       className={cn(
                         passwordCriteria.uppercase ? 'text-green-500' : 'text-gray-400'
                       )} 
                     />
                     <span className={cn(
-                      'text-sm',
+                      'text-xs',
                       passwordCriteria.uppercase ? 'text-green-700' : 'text-gray-600'
                     )}>
                       Uma letra maiúscula
@@ -255,13 +402,13 @@ const Register = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Check 
-                      size={16} 
+                      size={14} 
                       className={cn(
                         passwordCriteria.lowercase ? 'text-green-500' : 'text-gray-400'
                       )} 
                     />
                     <span className={cn(
-                      'text-sm',
+                      'text-xs',
                       passwordCriteria.lowercase ? 'text-green-700' : 'text-gray-600'
                     )}>
                       Uma letra minúscula
@@ -269,13 +416,13 @@ const Register = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Check 
-                      size={16} 
+                      size={14} 
                       className={cn(
                         passwordCriteria.number ? 'text-green-500' : 'text-gray-400'
                       )} 
                     />
                     <span className={cn(
-                      'text-sm',
+                      'text-xs',
                       passwordCriteria.number ? 'text-green-700' : 'text-gray-600'
                     )}>
                       Um número
@@ -283,13 +430,13 @@ const Register = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Check 
-                      size={16} 
+                      size={14} 
                       className={cn(
                         passwordCriteria.special ? 'text-green-500' : 'text-gray-400'
                       )} 
                     />
                     <span className={cn(
-                      'text-sm',
+                      'text-xs',
                       passwordCriteria.special ? 'text-green-700' : 'text-gray-600'
                     )}>
                       Um caractere especial
@@ -301,20 +448,20 @@ const Register = () => {
 
             {errors.register && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{errors.register}</p>
+                <p className="text-xs text-red-600">{errors.register}</p>
               </div>
             )}
 
             <Button 
               type="submit" 
-              className="w-full bg-pink-600 hover:bg-pink-700"
+              className="w-full bg-pink-600 hover:bg-pink-700 text-sm"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Criando conta...' : (isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta')}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-6 text-center text-xs sm:text-sm text-gray-600">
             Já tem uma conta?{' '}
             <Link 
               to="/login" 

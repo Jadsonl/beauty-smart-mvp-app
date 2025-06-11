@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -403,7 +402,7 @@ export const useSupabase = () => {
     }
   };
 
-  // AGENDAMENTOS
+  // AGENDAMENTOS - Implementação completa
   const getAgendamentos = async (): Promise<Agendamento[]> => {
     if (!user) {
       console.log('getAgendamentos: Usuário não autenticado');
@@ -449,7 +448,14 @@ export const useSupabase = () => {
         .from('appointments')
         .insert({
           user_id: user.id,
-          ...agendamentoData
+          client_name: agendamentoData.client_name,
+          client_email: agendamentoData.client_email,
+          client_phone: agendamentoData.client_phone,
+          service: agendamentoData.service,
+          date: agendamentoData.date,
+          time: agendamentoData.time,
+          status: agendamentoData.status || 'scheduled',
+          notes: agendamentoData.notes
         });
       
       if (error) {
@@ -467,7 +473,69 @@ export const useSupabase = () => {
     }
   };
 
-  // PRODUTOS
+  const updateAgendamento = async (id: string, agendamentoData: Partial<Agendamento>): Promise<boolean> => {
+    if (!user) {
+      console.log('updateAgendamento: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('updateAgendamento: Atualizando agendamento', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update(agendamentoData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('updateAgendamento: Erro ao atualizar agendamento:', error);
+        return false;
+      }
+      
+      console.log('updateAgendamento: Agendamento atualizado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('updateAgendamento: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteAgendamento = async (id: string): Promise<boolean> => {
+    if (!user) {
+      console.log('deleteAgendamento: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('deleteAgendamento: Deletando agendamento', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('deleteAgendamento: Erro ao deletar agendamento:', error);
+        return false;
+      }
+      
+      console.log('deleteAgendamento: Agendamento deletado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('deleteAgendamento: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // PRODUTOS e INVENTÁRIO
   const getProdutos = async (): Promise<Produto[]> => {
     if (!user) {
       console.log('getProdutos: Usuário não autenticado');
@@ -547,6 +615,8 @@ export const useSupabase = () => {
     // Agendamentos
     getAgendamentos,
     addAgendamento,
+    updateAgendamento,
+    deleteAgendamento,
     // Produtos e Inventário
     getProdutos,
     getInventory

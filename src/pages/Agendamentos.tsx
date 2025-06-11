@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,18 +7,29 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useApp } from '@/context/AppContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
+import { toast } from 'sonner';
 
 const Agendamentos = () => {
-  const { agendamentos, clientes, addAgendamento, editAgendamento, deleteAgendamento } = useApp();
+  const { 
+    getAgendamentos, 
+    addAgendamento, 
+    updateAgendamento, 
+    deleteAgendamento,
+    getClientes,
+    loading 
+  } = useSupabase();
+  
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAgendamento, setEditingAgendamento] = useState<any>(null);
+  const [editingAgendamento, setEditingAgendamento] = useState<Agendamento | null>(null);
   
   const [formData, setFormData] = useState({
     clienteId: '',
@@ -26,7 +37,7 @@ const Agendamentos = () => {
     profissional: '',
     data: '',
     horario: '',
-    valor: ''
+    observacoes: ''
   });
 
   const timeSlots = [
@@ -36,6 +47,25 @@ const Agendamentos = () => {
     '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
   ];
 
+  // Carregar dados do Supabase
+  useEffect(() => {
+    const loadData = async () => {
+      console.log('Carregando agendamentos e clientes do Supabase...');
+      
+      const [agendamentosData, clientesData] = await Promise.all([
+        getAgendamentos(),
+        getClientes()
+      ]);
+      
+      setAgendamentos(agendamentosData);
+      setClientes(clientesData);
+      
+      console.log('Dados carregados:', { agendamentos: agendamentosData.length, clientes: clientesData.length });
+    };
+
+    loadData();
+  }, []);
+
   const resetForm = () => {
     setFormData({
       clienteId: '',
@@ -43,21 +73,25 @@ const Agendamentos = () => {
       profissional: '',
       data: '',
       horario: '',
-      valor: ''
+      observacoes: ''
     });
     setEditingAgendamento(null);
   };
 
-  const handleOpenDialog = (agendamento = null) => {
+  const handleOpenDialog = (agendamento: Agendamento | null = null) => {
     if (agendamento) {
       setEditingAgendamento(agendamento);
+      
+      // Encontrar cliente pelo nome
+      const cliente = clientes.find(c => c.nome === agendamento.client_name);
+      
       setFormData({
-        clienteId: agendamento.clienteId,
-        servico: agendamento.servico,
-        profissional: agendamento.profissional,
-        data: agendamento.data,
-        horario: agendamento.horario,
-        valor: agendamento.valor?.toString() || ''
+        clienteId: cliente?.id || '',
+        servico: agendamento.service,
+        profissional: 'Profissional',
+        data: agendamento.date,
+        horario: agendamento.time,
+        observacoes: agendamento.notes || ''
       });
     } else {
       resetForm();
@@ -70,73 +104,119 @@ const Agendamentos = () => {
     resetForm();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.clienteId || !formData.servico || !formData.profissional || !formData.data || !formData.horario) {
+    if (!formData.clienteId || !formData.servico || !formData.data || !formData.horario) {
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
     const cliente = clientes.find(c => c.id === formData.clienteId);
-    if (!cliente) return;
+    if (!cliente) {
+      toast.error('Cliente não encontrado');
+      return;
+    }
 
     const agendamentoData = {
-      clienteId: formData.clienteId,
-      clienteNome: cliente.nome,
-      servico: formData.servico,
-      profissional: formData.profissional,
-      data: formData.data,
-      horario: formData.horario,
-      status: 'agendado' as const,
-      valor: formData.valor ? parseFloat(formData.valor) : undefined
+      client_name: cliente.nome,
+      client_email: cliente.email || '',
+      client_phone: cliente.telefone || '',
+      service: formData.servico,
+      date: formData.data,
+      time: formData.horario,
+      status: 'scheduled' as const,
+      notes: formData.observacoes
     };
 
+    let success = false;
+
     if (editingAgendamento) {
-      editAgendamento(editingAgendamento.id, agendamentoData);
+      success = await updateAgendamento(editingAgendamento.id, agendamentoData);
+      if (success) {
+        toast.success('Agendamento atualizado com sucesso!');
+        // Atualizar lista local
+        setAgendamentos(prev => prev.map(a => 
+          a.id === editingAgendamento.id 
+            ? { ...a, ...agendamentoData }
+            : a
+        ));
+      } else {
+        toast.error('Erro ao atualizar agendamento');
+      }
     } else {
-      addAgendamento(agendamentoData);
+      success = await addAgendamento(agendamentoData);
+      if (success) {
+        toast.success('Agendamento criado com sucesso!');
+        // Recarregar lista
+        const novosAgendamentos = await getAgendamentos();
+        setAgendamentos(novosAgendamentos);
+      } else {
+        toast.error('Erro ao criar agendamento');
+      }
     }
     
-    handleCloseDialog();
+    if (success) {
+      handleCloseDialog();
+    }
   };
 
-  const handleDelete = (agendamento: any) => {
-    if (window.confirm(`Tem certeza que deseja excluir o agendamento de ${agendamento.clienteNome}?`)) {
-      deleteAgendamento(agendamento.id);
+  const handleDelete = async (agendamento: Agendamento) => {
+    if (window.confirm(`Tem certeza que deseja excluir o agendamento de ${agendamento.client_name}?`)) {
+      const success = await deleteAgendamento(agendamento.id);
+      if (success) {
+        toast.success('Agendamento excluído com sucesso!');
+        setAgendamentos(prev => prev.filter(a => a.id !== agendamento.id));
+      } else {
+        toast.error('Erro ao excluir agendamento');
+      }
     }
   };
 
   const sortedAgendamentos = [...agendamentos].sort((a, b) => {
-    const dateA = new Date(`${a.data}T${a.horario}`);
-    const dateB = new Date(`${b.data}T${b.horario}`);
+    const dateA = new Date(`${a.date}T${a.time}`);
+    const dateB = new Date(`${b.date}T${b.time}`);
     return dateB.getTime() - dateA.getTime();
   });
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando agendamentos...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex justify-between items-center">
+      <div className="space-y-4 sm:space-y-8">
+        {/* Header - Responsivo */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Agendamentos</h1>
-            <p className="text-gray-600 mt-1">Gerencie todos os agendamentos do seu estabelecimento</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Agendamentos</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie todos os agendamentos do seu estabelecimento</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-pink-600 hover:bg-pink-700"
+                className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
                 onClick={() => handleOpenDialog()}
               >
                 + Novo Agendamento
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">
                   {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-sm">
                   {editingAgendamento 
                     ? 'Edite as informações do agendamento.' 
                     : 'Preencha os dados para criar um novo agendamento.'
@@ -182,17 +262,7 @@ const Agendamentos = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="profissional">Profissional</Label>
-                  <Input
-                    id="profissional"
-                    placeholder="Nome do profissional"
-                    value={formData.profissional}
-                    onChange={(e) => setFormData(prev => ({ ...prev, profissional: e.target.value }))}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Data</Label>
                     <Popover>
@@ -253,29 +323,28 @@ const Agendamentos = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valor">Valor (Opcional)</Label>
+                  <Label htmlFor="observacoes">Observações (Opcional)</Label>
                   <Input
-                    id="valor"
-                    type="number"
-                    step="0.01"
-                    placeholder="0,00"
-                    value={formData.valor}
-                    onChange={(e) => setFormData(prev => ({ ...prev, valor: e.target.value }))}
+                    id="observacoes"
+                    placeholder="Observações adicionais"
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
                   />
                 </div>
 
-                <div className="flex justify-end space-x-2 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={handleCloseDialog}
+                    className="w-full sm:w-auto"
                   >
                     Cancelar
                   </Button>
                   <Button 
                     type="submit" 
-                    className="bg-pink-600 hover:bg-pink-700"
-                    disabled={clientes.length === 0 || !formData.clienteId}
+                    className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
+                    disabled={clientes.length === 0 || !formData.clienteId || loading}
                   >
                     {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
                   </Button>
@@ -285,11 +354,11 @@ const Agendamentos = () => {
           </Dialog>
         </div>
 
-        {/* Agendamentos List */}
+        {/* Agendamentos List - Responsivo */}
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Agendamentos</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Lista de Agendamentos</CardTitle>
+            <CardDescription className="text-sm">
               {agendamentos.length === 0 
                 ? 'Nenhum agendamento cadastrado ainda.' 
                 : `${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''} cadastrado${agendamentos.length > 1 ? 's' : ''}`
@@ -298,16 +367,16 @@ const Agendamentos = () => {
           </CardHeader>
           <CardContent>
             {agendamentos.length === 0 ? (
-              <div className="text-center py-12">
-                <span className="text-6xl mb-4 block">📅</span>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="text-center py-8 sm:py-12">
+                <span className="text-4xl sm:text-6xl mb-4 block">📅</span>
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                   Nenhum agendamento cadastrado
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
                   Comece criando seu primeiro agendamento!
                 </p>
                 <Button 
-                  className="bg-pink-600 hover:bg-pink-700"
+                  className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
                   onClick={() => handleOpenDialog()}
                 >
                   + Criar Primeiro Agendamento
@@ -318,48 +387,44 @@ const Agendamentos = () => {
                 {sortedAgendamentos.map((agendamento) => (
                   <div 
                     key={agendamento.id} 
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow gap-4"
                   >
                     <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <h3 className="font-semibold text-lg">{agendamento.clienteNome}</h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                        <h3 className="font-semibold text-base sm:text-lg">{agendamento.client_name}</h3>
                         <span className={cn(
-                          "px-2 py-1 text-xs font-medium rounded-full",
-                          agendamento.status === 'agendado' && "bg-blue-100 text-blue-800",
-                          agendamento.status === 'concluido' && "bg-green-100 text-green-800",
-                          agendamento.status === 'cancelado' && "bg-red-100 text-red-800"
+                          "px-2 py-1 text-xs font-medium rounded-full w-fit",
+                          agendamento.status === 'scheduled' && "bg-blue-100 text-blue-800",
+                          agendamento.status === 'completed' && "bg-green-100 text-green-800",
+                          agendamento.status === 'cancelled' && "bg-red-100 text-red-800"
                         )}>
-                          {agendamento.status}
+                          {agendamento.status === 'scheduled' ? 'Agendado' : 
+                           agendamento.status === 'completed' ? 'Concluído' : 'Cancelado'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600">
                         <div>
                           <span className="font-medium">Serviço:</span>
-                          <p>{agendamento.servico}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Profissional:</span>
-                          <p>{agendamento.profissional}</p>
+                          <p className="truncate">{agendamento.service}</p>
                         </div>
                         <div>
                           <span className="font-medium">Data:</span>
-                          <p>{format(new Date(agendamento.data), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                          <p>{format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR })}</p>
                         </div>
                         <div>
                           <span className="font-medium">Horário:</span>
-                          <p>{agendamento.horario}</p>
+                          <p>{agendamento.time}</p>
                         </div>
+                        {agendamento.notes && (
+                          <div className="sm:col-span-2 lg:col-span-1">
+                            <span className="font-medium">Obs:</span>
+                            <p className="truncate">{agendamento.notes}</p>
+                          </div>
+                        )}
                       </div>
-                      {agendamento.valor && (
-                        <div className="mt-2">
-                          <span className="text-green-600 font-medium">
-                            R$ {agendamento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      )}
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 self-end sm:self-center">
                       <Button
                         variant="outline"
                         size="sm"
