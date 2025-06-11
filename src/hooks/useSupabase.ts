@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -74,9 +75,14 @@ export const useSupabase = () => {
 
   // CLIENTES
   const getClientes = async (): Promise<Cliente[]> => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getClientes: Usuário não autenticado');
+      return [];
+    }
     
     setLoading(true);
+    console.log('getClientes: Iniciando busca para user_id:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('clients')
@@ -85,13 +91,14 @@ export const useSupabase = () => {
         .order('nome', { ascending: true });
       
       if (error) {
-        console.error('Erro ao buscar clientes:', error);
+        console.error('getClientes: Erro ao buscar clientes:', error);
         return [];
       }
       
+      console.log('getClientes: Clientes encontrados:', data);
       return data || [];
     } catch (error) {
-      console.error('Erro inesperado ao buscar clientes:', error);
+      console.error('getClientes: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);
@@ -99,9 +106,14 @@ export const useSupabase = () => {
   };
 
   const addCliente = async (clienteData: Omit<Cliente, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('addCliente: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('addCliente: Adicionando cliente para user_id:', user.id, 'dados:', clienteData);
+    
     try {
       const { error } = await supabase
         .from('clients')
@@ -111,13 +123,14 @@ export const useSupabase = () => {
         });
       
       if (error) {
-        console.error('Erro ao criar cliente:', error);
+        console.error('addCliente: Erro ao criar cliente:', error);
         return false;
       }
       
+      console.log('addCliente: Cliente criado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao criar cliente:', error);
+      console.error('addCliente: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -125,9 +138,14 @@ export const useSupabase = () => {
   };
 
   const updateCliente = async (id: string, clienteData: Partial<Cliente>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('updateCliente: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('updateCliente: Atualizando cliente', id, 'para user_id:', user.id);
+    
     try {
       const { error } = await supabase
         .from('clients')
@@ -136,13 +154,14 @@ export const useSupabase = () => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Erro ao atualizar cliente:', error);
+        console.error('updateCliente: Erro ao atualizar cliente:', error);
         return false;
       }
       
+      console.log('updateCliente: Cliente atualizado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao atualizar cliente:', error);
+      console.error('updateCliente: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -150,9 +169,14 @@ export const useSupabase = () => {
   };
 
   const deleteCliente = async (id: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('deleteCliente: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('deleteCliente: Deletando cliente', id, 'para user_id:', user.id);
+    
     try {
       const { error } = await supabase
         .from('clients')
@@ -161,13 +185,14 @@ export const useSupabase = () => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Erro ao deletar cliente:', error);
+        console.error('deleteCliente: Erro ao deletar cliente:', error);
         return false;
       }
       
+      console.log('deleteCliente: Cliente deletado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao deletar cliente:', error);
+      console.error('deleteCliente: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -176,9 +201,14 @@ export const useSupabase = () => {
 
   // SERVIÇOS
   const getServicos = async (): Promise<Servico[]> => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getServicos: Usuário não autenticado');
+      return [];
+    }
     
     setLoading(true);
+    console.log('getServicos: Iniciando busca para user_id:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('services')
@@ -187,13 +217,14 @@ export const useSupabase = () => {
         .order('nome', { ascending: true });
       
       if (error) {
-        console.error('Erro ao buscar serviços:', error);
+        console.error('getServicos: Erro ao buscar serviços:', error);
         return [];
       }
       
+      console.log('getServicos: Serviços encontrados:', data);
       return data || [];
     } catch (error) {
-      console.error('Erro inesperado ao buscar serviços:', error);
+      console.error('getServicos: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);
@@ -201,9 +232,14 @@ export const useSupabase = () => {
   };
 
   const addServico = async (servicoData: Omit<Servico, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('addServico: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('addServico: Adicionando serviço para user_id:', user.id, 'dados:', servicoData);
+    
     try {
       const { error } = await supabase
         .from('services')
@@ -213,13 +249,14 @@ export const useSupabase = () => {
         });
       
       if (error) {
-        console.error('Erro ao criar serviço:', error);
+        console.error('addServico: Erro ao criar serviço:', error);
         return false;
       }
       
+      console.log('addServico: Serviço criado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao criar serviço:', error);
+      console.error('addServico: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -227,9 +264,14 @@ export const useSupabase = () => {
   };
 
   const updateServico = async (id: string, servicoData: Partial<Servico>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('updateServico: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('updateServico: Atualizando serviço', id, 'para user_id:', user.id);
+    
     try {
       const { error } = await supabase
         .from('services')
@@ -238,13 +280,14 @@ export const useSupabase = () => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Erro ao atualizar serviço:', error);
+        console.error('updateServico: Erro ao atualizar serviço:', error);
         return false;
       }
       
+      console.log('updateServico: Serviço atualizado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao atualizar serviço:', error);
+      console.error('updateServico: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -252,9 +295,14 @@ export const useSupabase = () => {
   };
 
   const deleteServico = async (id: string): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('deleteServico: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('deleteServico: Deletando serviço', id, 'para user_id:', user.id);
+    
     try {
       const { error } = await supabase
         .from('services')
@@ -263,13 +311,14 @@ export const useSupabase = () => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Erro ao deletar serviço:', error);
+        console.error('deleteServico: Erro ao deletar serviço:', error);
         return false;
       }
       
+      console.log('deleteServico: Serviço deletado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao deletar serviço:', error);
+      console.error('deleteServico: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -278,9 +327,14 @@ export const useSupabase = () => {
 
   // TRANSAÇÕES
   const getTransacoes = async (): Promise<Transacao[]> => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getTransacoes: Usuário não autenticado');
+      return [];
+    }
     
     setLoading(true);
+    console.log('getTransacoes: Iniciando busca para user_id:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('transactions')
@@ -289,9 +343,11 @@ export const useSupabase = () => {
         .order('data', { ascending: false });
       
       if (error) {
-        console.error('Erro ao buscar transações:', error);
+        console.error('getTransacoes: Erro ao buscar transações:', error);
         return [];
       }
+      
+      console.log('getTransacoes: Dados brutos do Supabase:', data);
       
       // Mapear os dados do Supabase para a interface Transacao com tipagem correta
       const typedTransactions: Transacao[] = (data || []).map((item: any) => ({
@@ -305,9 +361,10 @@ export const useSupabase = () => {
         created_at: item.created_at
       }));
       
+      console.log('getTransacoes: Transações processadas:', typedTransactions);
       return typedTransactions;
     } catch (error) {
-      console.error('Erro inesperado ao buscar transações:', error);
+      console.error('getTransacoes: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);
@@ -315,9 +372,14 @@ export const useSupabase = () => {
   };
 
   const addTransacao = async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('addTransacao: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('addTransacao: Adicionando transação para user_id:', user.id, 'dados:', transacaoData);
+    
     try {
       const { error } = await supabase
         .from('transactions')
@@ -327,13 +389,14 @@ export const useSupabase = () => {
         });
       
       if (error) {
-        console.error('Erro ao criar transação:', error);
+        console.error('addTransacao: Erro ao criar transação:', error);
         return false;
       }
       
+      console.log('addTransacao: Transação criada com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao criar transação:', error);
+      console.error('addTransacao: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -342,9 +405,14 @@ export const useSupabase = () => {
 
   // AGENDAMENTOS
   const getAgendamentos = async (): Promise<Agendamento[]> => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getAgendamentos: Usuário não autenticado');
+      return [];
+    }
     
     setLoading(true);
+    console.log('getAgendamentos: Iniciando busca para user_id:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('appointments')
@@ -353,13 +421,14 @@ export const useSupabase = () => {
         .order('date', { ascending: true });
       
       if (error) {
-        console.error('Erro ao buscar agendamentos:', error);
+        console.error('getAgendamentos: Erro ao buscar agendamentos:', error);
         return [];
       }
       
+      console.log('getAgendamentos: Agendamentos encontrados:', data);
       return data || [];
     } catch (error) {
-      console.error('Erro inesperado ao buscar agendamentos:', error);
+      console.error('getAgendamentos: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);
@@ -367,9 +436,14 @@ export const useSupabase = () => {
   };
 
   const addAgendamento = async (agendamentoData: Omit<Agendamento, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('addAgendamento: Usuário não autenticado');
+      return false;
+    }
     
     setLoading(true);
+    console.log('addAgendamento: Adicionando agendamento para user_id:', user.id, 'dados:', agendamentoData);
+    
     try {
       const { error } = await supabase
         .from('appointments')
@@ -379,13 +453,14 @@ export const useSupabase = () => {
         });
       
       if (error) {
-        console.error('Erro ao criar agendamento:', error);
+        console.error('addAgendamento: Erro ao criar agendamento:', error);
         return false;
       }
       
+      console.log('addAgendamento: Agendamento criado com sucesso');
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao criar agendamento:', error);
+      console.error('addAgendamento: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);
@@ -394,9 +469,14 @@ export const useSupabase = () => {
 
   // PRODUTOS
   const getProdutos = async (): Promise<Produto[]> => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getProdutos: Usuário não autenticado');
+      return [];
+    }
     
     setLoading(true);
+    console.log('getProdutos: Iniciando busca para user_id:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('products')
@@ -405,13 +485,14 @@ export const useSupabase = () => {
         .order('name', { ascending: true });
       
       if (error) {
-        console.error('Erro ao buscar produtos:', error);
+        console.error('getProdutos: Erro ao buscar produtos:', error);
         return [];
       }
       
+      console.log('getProdutos: Produtos encontrados:', data);
       return data || [];
     } catch (error) {
-      console.error('Erro inesperado ao buscar produtos:', error);
+      console.error('getProdutos: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);
@@ -419,9 +500,14 @@ export const useSupabase = () => {
   };
 
   const getInventory = async (): Promise<ProdutoInventory[]> => {
-    if (!user) return [];
+    if (!user) {
+      console.log('getInventory: Usuário não autenticado');
+      return [];
+    }
     
     setLoading(true);
+    console.log('getInventory: Iniciando busca para user_id:', user.id);
+    
     try {
       const { data, error } = await supabase
         .from('product_inventory')
@@ -429,13 +515,14 @@ export const useSupabase = () => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Erro ao buscar inventário:', error);
+        console.error('getInventory: Erro ao buscar inventário:', error);
         return [];
       }
       
+      console.log('getInventory: Inventário encontrado:', data);
       return data || [];
     } catch (error) {
-      console.error('Erro inesperado ao buscar inventário:', error);
+      console.error('getInventory: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);
