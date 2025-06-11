@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -294,7 +293,19 @@ export const useSupabase = () => {
         return [];
       }
       
-      return data || [];
+      // Mapear os dados do Supabase para a interface Transacao com tipagem correta
+      const typedTransactions: Transacao[] = (data || []).map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        tipo: item.tipo as "receita" | "despesa", // Afirmar o tipo literal
+        descricao: item.descricao,
+        valor: item.valor,
+        data: item.data,
+        agendamento_id: item.agendamento_id,
+        created_at: item.created_at
+      }));
+      
+      return typedTransactions;
     } catch (error) {
       console.error('Erro inesperado ao buscar transações:', error);
       return [];
