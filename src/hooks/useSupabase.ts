@@ -1,69 +1,336 @@
 
 import { useState, useEffect } from 'react';
-import { supabase, type Profile, type Appointment, type Product, type ProductInventory } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+
+// Tipos para as novas tabelas
+export interface Cliente {
+  id: string;
+  user_id: string;
+  nome: string;
+  telefone?: string;
+  email?: string;
+  created_at?: string;
+}
+
+export interface Servico {
+  id: string;
+  user_id: string;
+  nome: string;
+  preco: number;
+  duracao?: string;
+  created_at?: string;
+}
+
+export interface Transacao {
+  id: string;
+  user_id: string;
+  tipo: 'receita' | 'despesa';
+  descricao: string;
+  valor: number;
+  data: string;
+  agendamento_id?: string;
+  created_at?: string;
+}
+
+export interface Agendamento {
+  id: string;
+  user_id: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  service: string;
+  date: string;
+  time: string;
+  status?: string;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface Produto {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category?: string;
+  unit?: string;
+  min_stock_level?: number;
+  created_at?: string;
+}
+
+export interface ProdutoInventory {
+  id: string;
+  user_id: string;
+  product_id: string;
+  quantity: number;
+  min_stock: number;
+  cost_per_unit?: number;
+  updated_at?: string;
+}
 
 export const useSupabase = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Buscar perfil do usuário
-  const getProfile = async (): Promise<Profile | null> => {
-    if (!user) return null;
+  // CLIENTES
+  const getClientes = async (): Promise<Cliente[]> => {
+    if (!user) return [];
     
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('clients')
         .select('*')
-        .eq('id', user.id)
-        .single();
+        .eq('user_id', user.id)
+        .order('nome', { ascending: true });
       
       if (error) {
-        console.error('Erro ao buscar perfil:', error);
-        return null;
+        console.error('Erro ao buscar clientes:', error);
+        return [];
       }
       
-      return data;
+      return data || [];
     } catch (error) {
-      console.error('Erro inesperado ao buscar perfil:', error);
-      return null;
+      console.error('Erro inesperado ao buscar clientes:', error);
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
-  // Criar ou atualizar perfil
-  const upsertProfile = async (profileData: Partial<Profile>): Promise<boolean> => {
+  const addCliente = async (clienteData: Omit<Cliente, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
     if (!user) return false;
     
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email,
-          ...profileData,
-          updated_at: new Date().toISOString()
+        .from('clients')
+        .insert({
+          user_id: user.id,
+          ...clienteData
         });
       
       if (error) {
-        console.error('Erro ao salvar perfil:', error);
+        console.error('Erro ao criar cliente:', error);
         return false;
       }
       
       return true;
     } catch (error) {
-      console.error('Erro inesperado ao salvar perfil:', error);
+      console.error('Erro inesperado ao criar cliente:', error);
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Buscar agendamentos
-  const getAppointments = async (): Promise<Appointment[]> => {
+  const updateCliente = async (id: string, clienteData: Partial<Cliente>): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update(clienteData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Erro ao atualizar cliente:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao atualizar cliente:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteCliente = async (id: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Erro ao deletar cliente:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao deletar cliente:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // SERVIÇOS
+  const getServicos = async (): Promise<Servico[]> => {
+    if (!user) return [];
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('nome', { ascending: true });
+      
+      if (error) {
+        console.error('Erro ao buscar serviços:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Erro inesperado ao buscar serviços:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addServico = async (servicoData: Omit<Servico, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('services')
+        .insert({
+          user_id: user.id,
+          ...servicoData
+        });
+      
+      if (error) {
+        console.error('Erro ao criar serviço:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao criar serviço:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateServico = async (id: string, servicoData: Partial<Servico>): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('services')
+        .update(servicoData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Erro ao atualizar serviço:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao atualizar serviço:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteServico = async (id: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Erro ao deletar serviço:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao deletar serviço:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // TRANSAÇÕES
+  const getTransacoes = async (): Promise<Transacao[]> => {
+    if (!user) return [];
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('data', { ascending: false });
+      
+      if (error) {
+        console.error('Erro ao buscar transações:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Erro inesperado ao buscar transações:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTransacao = async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user) return false;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          ...transacaoData
+        });
+      
+      if (error) {
+        console.error('Erro ao criar transação:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro inesperado ao criar transação:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // AGENDAMENTOS
+  const getAgendamentos = async (): Promise<Agendamento[]> => {
     if (!user) return [];
     
     setLoading(true);
@@ -72,7 +339,7 @@ export const useSupabase = () => {
         .from('appointments')
         .select('*')
         .eq('user_id', user.id)
-        .order('appointment_date', { ascending: true });
+        .order('date', { ascending: true });
       
       if (error) {
         console.error('Erro ao buscar agendamentos:', error);
@@ -88,8 +355,7 @@ export const useSupabase = () => {
     }
   };
 
-  // Criar agendamento
-  const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+  const addAgendamento = async (agendamentoData: Omit<Agendamento, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
     if (!user) return false;
     
     setLoading(true);
@@ -98,8 +364,7 @@ export const useSupabase = () => {
         .from('appointments')
         .insert({
           user_id: user.id,
-          ...appointmentData,
-          created_at: new Date().toISOString()
+          ...agendamentoData
         });
       
       if (error) {
@@ -116,8 +381,8 @@ export const useSupabase = () => {
     }
   };
 
-  // Buscar produtos
-  const getProducts = async (): Promise<Product[]> => {
+  // PRODUTOS
+  const getProdutos = async (): Promise<Produto[]> => {
     if (!user) return [];
     
     setLoading(true);
@@ -142,8 +407,7 @@ export const useSupabase = () => {
     }
   };
 
-  // Buscar inventário
-  const getInventory = async (): Promise<ProductInventory[]> => {
+  const getInventory = async (): Promise<ProdutoInventory[]> => {
     if (!user) return [];
     
     setLoading(true);
@@ -169,11 +433,24 @@ export const useSupabase = () => {
 
   return {
     loading,
-    getProfile,
-    upsertProfile,
-    getAppointments,
-    createAppointment,
-    getProducts,
+    // Clientes
+    getClientes,
+    addCliente,
+    updateCliente,
+    deleteCliente,
+    // Serviços
+    getServicos,
+    addServico,
+    updateServico,
+    deleteServico,
+    // Transações
+    getTransacoes,
+    addTransacao,
+    // Agendamentos
+    getAgendamentos,
+    addAgendamento,
+    // Produtos e Inventário
+    getProdutos,
     getInventory
   };
 };

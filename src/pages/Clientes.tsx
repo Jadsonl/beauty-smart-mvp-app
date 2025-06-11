@@ -1,26 +1,39 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useApp } from '@/context/AppContext';
+import { useSupabase, type Cliente } from '@/hooks/useSupabase';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Edit, Trash2, Phone, Mail } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Clientes = () => {
-  const { clientes, addCliente, editCliente, deleteCliente } = useApp();
+  const { getClientes, addCliente, updateCliente, deleteCliente, loading } = useSupabase();
+  const { toast } = useToast();
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCliente, setEditingCliente] = useState<any>(null);
+  const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
     email: ''
   });
+
+  // Carregar clientes do Supabase
+  useEffect(() => {
+    loadClientes();
+  }, []);
+
+  const loadClientes = async () => {
+    const clientesData = await getClientes();
+    setClientes(clientesData);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -31,13 +44,13 @@ const Clientes = () => {
     setEditingCliente(null);
   };
 
-  const handleOpenDialog = (cliente = null) => {
+  const handleOpenDialog = (cliente: Cliente | null = null) => {
     if (cliente) {
       setEditingCliente(cliente);
       setFormData({
         nome: cliente.nome,
-        telefone: cliente.telefone,
-        email: cliente.email
+        telefone: cliente.telefone || '',
+        email: cliente.email || ''
       });
     } else {
       resetForm();
@@ -70,25 +83,75 @@ const Clientes = () => {
     setFormData(prev => ({ ...prev, telefone: formatted }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.nome || !formData.telefone) {
+      toast({
+        title: "Erro",
+        description: "Nome e telefone são obrigatórios.",
+        variant: "destructive"
+      });
       return;
     }
 
-    if (editingCliente) {
-      editCliente(editingCliente.id, formData);
-    } else {
-      addCliente(formData);
+    try {
+      let success = false;
+      
+      if (editingCliente) {
+        success = await updateCliente(editingCliente.id, formData);
+        if (success) {
+          toast({
+            title: "Sucesso",
+            description: "Cliente atualizado com sucesso!"
+          });
+        }
+      } else {
+        success = await addCliente(formData);
+        if (success) {
+          toast({
+            title: "Sucesso",
+            description: "Cliente cadastrado com sucesso!"
+          });
+        }
+      }
+
+      if (success) {
+        handleCloseDialog();
+        loadClientes(); // Recarregar a lista
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar cliente. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao salvar cliente:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
     }
-    
-    handleCloseDialog();
   };
 
-  const handleDelete = (cliente: any) => {
+  const handleDelete = async (cliente: Cliente) => {
     if (window.confirm(`Tem certeza que deseja excluir ${cliente.nome}?`)) {
-      deleteCliente(cliente.id);
+      const success = await deleteCliente(cliente.id);
+      if (success) {
+        toast({
+          title: "Sucesso",
+          description: "Cliente excluído com sucesso!"
+        });
+        loadClientes(); // Recarregar a lista
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir cliente. Tente novamente.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -171,8 +234,9 @@ const Clientes = () => {
                   <Button 
                     type="submit" 
                     className="bg-pink-600 hover:bg-pink-700"
+                    disabled={loading}
                   >
-                    {editingCliente ? 'Salvar Alterações' : 'Salvar Cliente'}
+                    {loading ? 'Salvando...' : (editingCliente ? 'Salvar Alterações' : 'Salvar Cliente')}
                   </Button>
                 </div>
               </form>
@@ -185,14 +249,19 @@ const Clientes = () => {
           <CardHeader>
             <CardTitle>Lista de Clientes</CardTitle>
             <CardDescription>
-              {clientes.length === 0 
-                ? 'Nenhum cliente cadastrado ainda.' 
-                : `${clientes.length} cliente${clientes.length > 1 ? 's' : ''} cadastrado${clientes.length > 1 ? 's' : ''}`
-              }
+              {loading ? 'Carregando clientes...' : (
+                clientes.length === 0 
+                  ? 'Nenhum cliente cadastrado ainda.' 
+                  : `${clientes.length} cliente${clientes.length > 1 ? 's' : ''} cadastrado${clientes.length > 1 ? 's' : ''}`
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {clientes.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Carregando clientes...</p>
+              </div>
+            ) : clientes.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-6xl mb-4 block">👥</span>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -219,7 +288,7 @@ const Clientes = () => {
                             {cliente.nome}
                           </h3>
                           <p className="text-sm text-gray-500">
-                            Cadastrado em {format(new Date(cliente.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                            Cadastrado em {format(new Date(cliente.created_at!), 'dd/MM/yyyy', { locale: ptBR })}
                           </p>
                         </div>
                         <div className="flex space-x-1">
@@ -242,10 +311,12 @@ const Clientes = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <Phone className="h-4 w-4" />
-                          <span>{cliente.telefone}</span>
-                        </div>
+                        {cliente.telefone && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <Phone className="h-4 w-4" />
+                            <span>{cliente.telefone}</span>
+                          </div>
+                        )}
                         {cliente.email && (
                           <div className="flex items-center space-x-2 text-sm text-gray-600">
                             <Mail className="h-4 w-4" />

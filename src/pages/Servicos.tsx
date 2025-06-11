@@ -1,26 +1,39 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useApp } from '@/context/AppContext';
+import { useSupabase, type Servico } from '@/hooks/useSupabase';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Edit, Trash2, Scissors, Clock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Servicos = () => {
-  const { servicos, addServico, editServico, deleteServico } = useApp();
+  const { getServicos, addServico, updateServico, deleteServico, loading } = useSupabase();
+  const { toast } = useToast();
+  const [servicos, setServicos] = useState<Servico[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingServico, setEditingServico] = useState<any>(null);
+  const [editingServico, setEditingServico] = useState<Servico | null>(null);
   
   const [formData, setFormData] = useState({
     nome: '',
     preco: '',
     duracao: ''
   });
+
+  // Carregar serviços do Supabase
+  useEffect(() => {
+    loadServicos();
+  }, []);
+
+  const loadServicos = async () => {
+    const servicosData = await getServicos();
+    setServicos(servicosData);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -31,13 +44,13 @@ const Servicos = () => {
     setEditingServico(null);
   };
 
-  const handleOpenDialog = (servico = null) => {
+  const handleOpenDialog = (servico: Servico | null = null) => {
     if (servico) {
       setEditingServico(servico);
       setFormData({
         nome: servico.nome,
         preco: servico.preco.toString(),
-        duracao: servico.duracao
+        duracao: servico.duracao || ''
       });
     } else {
       resetForm();
@@ -50,31 +63,81 @@ const Servicos = () => {
     resetForm();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.nome || !formData.preco) {
+      toast({
+        title: "Erro",
+        description: "Nome e preço são obrigatórios.",
+        variant: "destructive"
+      });
       return;
     }
 
-    const servicoData = {
-      nome: formData.nome,
-      preco: parseFloat(formData.preco),
-      duracao: formData.duracao
-    };
+    try {
+      const servicoData = {
+        nome: formData.nome,
+        preco: parseFloat(formData.preco),
+        duracao: formData.duracao || undefined
+      };
 
-    if (editingServico) {
-      editServico(editingServico.id, servicoData);
-    } else {
-      addServico(servicoData);
+      let success = false;
+      
+      if (editingServico) {
+        success = await updateServico(editingServico.id, servicoData);
+        if (success) {
+          toast({
+            title: "Sucesso",
+            description: "Serviço atualizado com sucesso!"
+          });
+        }
+      } else {
+        success = await addServico(servicoData);
+        if (success) {
+          toast({
+            title: "Sucesso",
+            description: "Serviço cadastrado com sucesso!"
+          });
+        }
+      }
+
+      if (success) {
+        handleCloseDialog();
+        loadServicos(); // Recarregar a lista
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar serviço. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao salvar serviço:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
     }
-    
-    handleCloseDialog();
   };
 
-  const handleDelete = (servico: any) => {
+  const handleDelete = async (servico: Servico) => {
     if (window.confirm(`Tem certeza que deseja excluir o serviço "${servico.nome}"?`)) {
-      deleteServico(servico.id);
+      const success = await deleteServico(servico.id);
+      if (success) {
+        toast({
+          title: "Sucesso",
+          description: "Serviço excluído com sucesso!"
+        });
+        loadServicos(); // Recarregar a lista
+      } else {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir serviço. Tente novamente.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -158,8 +221,9 @@ const Servicos = () => {
                   <Button 
                     type="submit" 
                     className="bg-pink-600 hover:bg-pink-700"
+                    disabled={loading}
                   >
-                    {editingServico ? 'Salvar Alterações' : 'Salvar Serviço'}
+                    {loading ? 'Salvando...' : (editingServico ? 'Salvar Alterações' : 'Salvar Serviço')}
                   </Button>
                 </div>
               </form>
@@ -172,14 +236,19 @@ const Servicos = () => {
           <CardHeader>
             <CardTitle>Lista de Serviços</CardTitle>
             <CardDescription>
-              {servicos.length === 0 
-                ? 'Nenhum serviço cadastrado ainda.' 
-                : `${servicos.length} serviço${servicos.length > 1 ? 's' : ''} cadastrado${servicos.length > 1 ? 's' : ''}`
-              }
+              {loading ? 'Carregando serviços...' : (
+                servicos.length === 0 
+                  ? 'Nenhum serviço cadastrado ainda.' 
+                  : `${servicos.length} serviço${servicos.length > 1 ? 's' : ''} cadastrado${servicos.length > 1 ? 's' : ''}`
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {servicos.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Carregando serviços...</p>
+              </div>
+            ) : servicos.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-6xl mb-4 block">✂️</span>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -209,7 +278,7 @@ const Servicos = () => {
                             </h3>
                           </div>
                           <p className="text-sm text-gray-500">
-                            Cadastrado em {format(new Date(servico.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+                            Cadastrado em {format(new Date(servico.created_at!), 'dd/MM/yyyy', { locale: ptBR })}
                           </p>
                         </div>
                         <div className="flex space-x-1">

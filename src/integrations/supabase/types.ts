@@ -51,6 +51,33 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_inventory: {
         Row: {
           cost_per_unit: number | null
@@ -158,6 +185,33 @@ export type Database = {
         }
         Relationships: []
       }
+      services: {
+        Row: {
+          created_at: string | null
+          duracao: string | null
+          id: string
+          nome: string
+          preco: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duracao?: string | null
+          id?: string
+          nome: string
+          preco: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duracao?: string | null
+          id?: string
+          nome?: string
+          preco?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           created_at: string | null
@@ -185,6 +239,39 @@ export type Database = {
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_status?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          agendamento_id: string | null
+          created_at: string | null
+          data: string
+          descricao: string
+          id: string
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          agendamento_id?: string | null
+          created_at?: string | null
+          data: string
+          descricao: string
+          id?: string
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          agendamento_id?: string | null
+          created_at?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          tipo?: string
+          user_id?: string
+          valor?: number
         }
         Relationships: []
       }

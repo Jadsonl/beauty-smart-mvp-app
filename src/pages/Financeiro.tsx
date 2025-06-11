@@ -1,22 +1,27 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useApp } from '@/context/AppContext';
+import { useSupabase, type Transacao } from '@/hooks/useSupabase';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit, Trash2, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Financeiro = () => {
-  const { transacoes } = useApp();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { getTransacoes, loading } = useSupabase();
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   
+  // Carregar transações do Supabase
+  useEffect(() => {
+    loadTransacoes();
+  }, []);
+
+  const loadTransacoes = async () => {
+    const transacoesData = await getTransacoes();
+    setTransacoes(transacoesData);
+  };
+
   const today = new Date();
   const thisMonth = format(today, 'yyyy-MM');
   
@@ -106,14 +111,19 @@ const Financeiro = () => {
               Últimas Transações
             </CardTitle>
             <CardDescription>
-              {transacoes.length === 0 
-                ? 'Nenhuma transação registrada ainda.' 
-                : `${transacoes.length} transação${transacoes.length > 1 ? 'ões' : ''} registrada${transacoes.length > 1 ? 's' : ''}`
-              }
+              {loading ? 'Carregando transações...' : (
+                transacoes.length === 0 
+                  ? 'Nenhuma transação registrada ainda.' 
+                  : `${transacoes.length} transação${transacoes.length > 1 ? 'ões' : ''} registrada${transacoes.length > 1 ? 's' : ''}`
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {transacoes.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">Carregando transações...</p>
+              </div>
+            ) : transacoes.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-6xl mb-4 block">💰</span>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
