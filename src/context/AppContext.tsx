@@ -1,54 +1,33 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
-interface User {
+// Tipos para as novas tabelas
+export interface Agendamento {
   id: string;
-  name: string;
-  email: string;
-  plano: 'autonomo' | 'basico' | 'premium';
-  testeGratuito?: boolean;
-  diasRestantes?: number;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  service: string;
+  date: string;
+  time: string;
+  notes?: string;
 }
 
-interface Cliente {
+export interface Cliente {
   id: string;
   nome: string;
-  telefone: string;
-  email: string;
-  createdAt: string;
+  telefone?: string;
+  email?: string;
 }
 
-interface Servico {
+export interface Servico {
   id: string;
   nome: string;
   preco: number;
-  duracao: string;
-  createdAt: string;
+  duracao?: string;
 }
 
-interface Produto {
-  id: string;
-  nome: string;
-  quantidade: number;
-  estoqueMinimo: number;
-  createdAt: string;
-}
-
-interface Agendamento {
-  id: string;
-  clienteId: string;
-  clienteNome: string;
-  servico: string;
-  profissional: string;
-  data: string;
-  horario: string;
-  status: 'agendado' | 'concluido' | 'cancelado';
-  valor?: number;
-  createdAt: string;
-}
-
-interface Transacao {
+export interface Transacao {
   id: string;
   tipo: 'receita' | 'despesa';
   descricao: string;
@@ -57,316 +36,274 @@ interface Transacao {
   agendamentoId?: string;
 }
 
+export interface Produto {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category?: string;
+  unit?: string;
+  min_stock_level?: number;
+}
+
+export interface ProdutoInventory {
+  id: string;
+  product_id: string;
+  quantity: number;
+  min_stock: number;
+  cost_per_unit?: number;
+}
+
 interface AppContextType {
-  user: User | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  register: (userData: any) => boolean;
+  // Clientes
   clientes: Cliente[];
-  addCliente: (cliente: Omit<Cliente, 'id' | 'createdAt'>) => void;
-  editCliente: (id: string, cliente: Omit<Cliente, 'id' | 'createdAt'>) => void;
+  addCliente: (cliente: Omit<Cliente, 'id'>) => void;
+  editCliente: (id: string, cliente: Partial<Cliente>) => void;
   deleteCliente: (id: string) => void;
+  
+  // Serviços
   servicos: Servico[];
-  addServico: (servico: Omit<Servico, 'id' | 'createdAt'>) => void;
-  editServico: (id: string, servico: Omit<Servico, 'id' | 'createdAt'>) => void;
+  addServico: (servico: Omit<Servico, 'id'>) => void;
+  editServico: (id: string, servico: Partial<Servico>) => void;
   deleteServico: (id: string) => void;
-  produtos: Produto[];
-  addProduto: (produto: Omit<Produto, 'id' | 'createdAt'>) => void;
-  editProduto: (id: string, produto: Omit<Produto, 'id' | 'createdAt'>) => void;
-  deleteProduto: (id: string) => void;
-  agendamentos: Agendamento[];
-  addAgendamento: (agendamento: Omit<Agendamento, 'id' | 'createdAt'>) => void;
-  editAgendamento: (id: string, agendamento: Omit<Agendamento, 'id' | 'createdAt'>) => void;
-  deleteAgendamento: (id: string) => void;
+  
+  // Transações
   transacoes: Transacao[];
-  changePlano: (plano: 'autonomo' | 'basico' | 'premium') => void;
+  addTransacao: (transacao: Omit<Transacao, 'id'>) => void;
+  
+  // Produtos
+  produtos: Produto[];
+  addProduto: (produto: Omit<Produto, 'id'>) => void;
+  editProduto: (id: string, produto: Partial<Produto>) => void;
+  deleteProduto: (id: string) => void;
+  
+  // Inventário
+  inventory: ProdutoInventory[];
+  updateInventory: (productId: string, quantity: number, minStock: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
-};
-
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { toast } = useToast();
+export function AppProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   
-  // Load data from localStorage
-  const loadFromStorage = (key: string, defaultValue: any) => {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : defaultValue;
-  };
+  // Estados para clientes, serviços, transações, produtos e inventário
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [inventory, setInventory] = useState<ProdutoInventory[]>([]);
 
-  const [user, setUser] = useState<User | null>(() => loadFromStorage('beleza_user', null));
-  const [clientes, setClientes] = useState<Cliente[]>(() => loadFromStorage('beleza_clientes', []));
-  const [servicos, setServicos] = useState<Servico[]>(() => loadFromStorage('beleza_servicos', []));
-  const [produtos, setProdutos] = useState<Produto[]>(() => loadFromStorage('beleza_produtos', []));
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>(() => loadFromStorage('beleza_agendamentos', []));
-  const [transacoes, setTransacoes] = useState<Transacao[]>(() => loadFromStorage('beleza_transacoes', []));
-
-  // Save to localStorage whenever data changes
+  // Carregar dados do localStorage quando o usuário estiver logado
   useEffect(() => {
-    localStorage.setItem('beleza_user', JSON.stringify(user));
-  }, [user]);
+    if (user?.id) {
+      console.log('AppContext: Carregando dados do localStorage para usuário:', user.id);
+      
+      // Carregar clientes
+      const clientesKey = `clientes_${user.id}`;
+      const clientesStorage = localStorage.getItem(clientesKey);
+      if (clientesStorage) {
+        setClientes(JSON.parse(clientesStorage));
+      }
 
-  useEffect(() => {
-    localStorage.setItem('beleza_clientes', JSON.stringify(clientes));
-  }, [clientes]);
+      // Carregar serviços
+      const servicosKey = `servicos_${user.id}`;
+      const servicosStorage = localStorage.getItem(servicosKey);
+      if (servicosStorage) {
+        setServicos(JSON.parse(servicosStorage));
+      }
 
-  useEffect(() => {
-    localStorage.setItem('beleza_servicos', JSON.stringify(servicos));
-  }, [servicos]);
+      // Carregar transações
+      const transacoesKey = `transacoes_${user.id}`;
+      const transacoesStorage = localStorage.getItem(transacoesKey);
+      if (transacoesStorage) {
+        setTransacoes(JSON.parse(transacoesStorage));
+      }
 
-  useEffect(() => {
-    localStorage.setItem('beleza_produtos', JSON.stringify(produtos));
-  }, [produtos]);
+      // Carregar produtos
+      const produtosKey = `produtos_${user.id}`;
+      const produtosStorage = localStorage.getItem(produtosKey);
+      if (produtosStorage) {
+        setProdutos(JSON.parse(produtosStorage));
+      }
 
-  useEffect(() => {
-    localStorage.setItem('beleza_agendamentos', JSON.stringify(agendamentos));
-  }, [agendamentos]);
-
-  useEffect(() => {
-    localStorage.setItem('beleza_transacoes', JSON.stringify(transacoes));
-  }, [transacoes]);
-
-  const login = (email: string, password: string): boolean => {
-    // Simulate login validation
-    if (email === 'teste@belezasmart.com' && password === 'senha123') {
-      const userData: User = {
-        id: '1',
-        name: 'Salão Teste',
-        email: email,
-        plano: 'premium',
-        testeGratuito: true,
-        diasRestantes: 30
-      };
-      setUser(userData);
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao BelezaSmart",
-      });
-      return true;
+      // Carregar inventário
+      const inventoryKey = `inventory_${user.id}`;
+      const inventoryStorage = localStorage.getItem(inventoryKey);
+      if (inventoryStorage) {
+        setInventory(JSON.parse(inventoryStorage));
+      }
+    } else {
+      // Limpar dados quando não há usuário logado
+      setClientes([]);
+      setServicos([]);
+      setTransacoes([]);
+      setProdutos([]);
+      setInventory([]);
     }
-    return false;
-  };
+  }, [user?.id]);
 
-  const register = (userData: any): boolean => {
-    // Check if email already exists
-    const existingUsers = loadFromStorage('beleza_registered_users', []);
-    if (existingUsers.some((u: any) => u.email === userData.email)) {
-      return false;
+  // Funções para gerenciar clientes
+  const addCliente = (cliente: Omit<Cliente, 'id'>) => {
+    const novoCliente = { ...cliente, id: Date.now().toString() };
+    const novosClientes = [...clientes, novoCliente];
+    setClientes(novosClientes);
+    if (user?.id) {
+      localStorage.setItem(`clientes_${user.id}`, JSON.stringify(novosClientes));
     }
-
-    // Save new user
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: userData.name,
-      email: userData.email,
-      plano: userData.fromTest ? 'premium' : 'autonomo',
-      testeGratuito: userData.fromTest || false,
-      diasRestantes: userData.fromTest ? 30 : undefined
-    };
-
-    existingUsers.push(newUser);
-    localStorage.setItem('beleza_registered_users', JSON.stringify(existingUsers));
-    
-    setUser(newUser);
-    return true;
   };
 
-  const logout = () => {
-    setUser(null);
-    // Clear user-specific data
-    setClientes([]);
-    setServicos([]);
-    setProdutos([]);
-    setAgendamentos([]);
-    setTransacoes([]);
-    localStorage.removeItem('beleza_clientes');
-    localStorage.removeItem('beleza_servicos');
-    localStorage.removeItem('beleza_produtos');
-    localStorage.removeItem('beleza_agendamentos');
-    localStorage.removeItem('beleza_transacoes');
-    toast({
-      title: "Logout realizado",
-      description: "Até logo!",
-    });
-  };
-
-  const addCliente = (cliente: Omit<Cliente, 'id' | 'createdAt'>) => {
-    const newCliente: Cliente = {
-      ...cliente,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setClientes(prev => [...prev, newCliente]);
-    toast({
-      title: "Cliente adicionado!",
-      description: `${cliente.nome} foi cadastrado com sucesso.`,
-    });
-  };
-
-  const editCliente = (id: string, clienteData: Omit<Cliente, 'id' | 'createdAt'>) => {
-    setClientes(prev => prev.map(c => c.id === id ? { ...c, ...clienteData } : c));
-    toast({
-      title: "Cliente atualizado!",
-      description: "As informações foram salvas com sucesso.",
-    });
+  const editCliente = (id: string, clienteData: Partial<Cliente>) => {
+    const novosClientes = clientes.map(cliente => 
+      cliente.id === id ? { ...cliente, ...clienteData } : cliente
+    );
+    setClientes(novosClientes);
+    if (user?.id) {
+      localStorage.setItem(`clientes_${user.id}`, JSON.stringify(novosClientes));
+    }
   };
 
   const deleteCliente = (id: string) => {
-    const cliente = clientes.find(c => c.id === id);
-    setClientes(prev => prev.filter(c => c.id !== id));
-    toast({
-      title: "Cliente excluído!",
-      description: `${cliente?.nome} foi removido com sucesso.`,
-    });
+    const novosClientes = clientes.filter(cliente => cliente.id !== id);
+    setClientes(novosClientes);
+    if (user?.id) {
+      localStorage.setItem(`clientes_${user.id}`, JSON.stringify(novosClientes));
+    }
   };
 
-  const addServico = (servico: Omit<Servico, 'id' | 'createdAt'>) => {
-    const newServico: Servico = {
-      ...servico,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setServicos(prev => [...prev, newServico]);
-    toast({
-      title: "Serviço adicionado!",
-      description: `${servico.nome} foi cadastrado com sucesso.`,
-    });
+  // Funções para gerenciar serviços
+  const addServico = (servico: Omit<Servico, 'id'>) => {
+    const novoServico = { ...servico, id: Date.now().toString() };
+    const novosServicos = [...servicos, novoServico];
+    setServicos(novosServicos);
+    if (user?.id) {
+      localStorage.setItem(`servicos_${user.id}`, JSON.stringify(novosServicos));
+    }
   };
 
-  const editServico = (id: string, servicoData: Omit<Servico, 'id' | 'createdAt'>) => {
-    setServicos(prev => prev.map(s => s.id === id ? { ...s, ...servicoData } : s));
-    toast({
-      title: "Serviço atualizado!",
-      description: "As informações foram salvas com sucesso.",
-    });
+  const editServico = (id: string, servicoData: Partial<Servico>) => {
+    const novosServicos = servicos.map(servico => 
+      servico.id === id ? { ...servico, ...servicoData } : servico
+    );
+    setServicos(novosServicos);
+    if (user?.id) {
+      localStorage.setItem(`servicos_${user.id}`, JSON.stringify(novosServicos));
+    }
   };
 
   const deleteServico = (id: string) => {
-    const servico = servicos.find(s => s.id === id);
-    setServicos(prev => prev.filter(s => s.id !== id));
-    toast({
-      title: "Serviço excluído!",
-      description: `${servico?.nome} foi removido com sucesso.`,
-    });
+    const novosServicos = servicos.filter(servico => servico.id !== id);
+    setServicos(novosServicos);
+    if (user?.id) {
+      localStorage.setItem(`servicos_${user.id}`, JSON.stringify(novosServicos));
+    }
   };
 
-  const addProduto = (produto: Omit<Produto, 'id' | 'createdAt'>) => {
-    const newProduto: Produto = {
-      ...produto,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setProdutos(prev => [...prev, newProduto]);
-    toast({
-      title: "Produto adicionado!",
-      description: `${produto.nome} foi cadastrado com sucesso.`,
-    });
+  // Função para adicionar transação
+  const addTransacao = (transacao: Omit<Transacao, 'id'>) => {
+    const novaTransacao = { ...transacao, id: Date.now().toString() };
+    const novasTransacoes = [...transacoes, novaTransacao];
+    setTransacoes(novasTransacoes);
+    if (user?.id) {
+      localStorage.setItem(`transacoes_${user.id}`, JSON.stringify(novasTransacoes));
+    }
   };
 
-  const editProduto = (id: string, produtoData: Omit<Produto, 'id' | 'createdAt'>) => {
-    setProdutos(prev => prev.map(p => p.id === id ? { ...p, ...produtoData } : p));
-    toast({
-      title: "Produto atualizado!",
-      description: "As informações foram salvas com sucesso.",
-    });
+  // Funções para gerenciar produtos
+  const addProduto = (produto: Omit<Produto, 'id'>) => {
+    const novoProduto = { ...produto, id: Date.now().toString() };
+    const novosProdutos = [...produtos, novoProduto];
+    setProdutos(novosProdutos);
+    if (user?.id) {
+      localStorage.setItem(`produtos_${user.id}`, JSON.stringify(novosProdutos));
+    }
+  };
+
+  const editProduto = (id: string, produtoData: Partial<Produto>) => {
+    const novosProdutos = produtos.map(produto => 
+      produto.id === id ? { ...produto, ...produtoData } : produto
+    );
+    setProdutos(novosProdutos);
+    if (user?.id) {
+      localStorage.setItem(`produtos_${user.id}`, JSON.stringify(novosProdutos));
+    }
   };
 
   const deleteProduto = (id: string) => {
-    const produto = produtos.find(p => p.id === id);
-    setProdutos(prev => prev.filter(p => p.id !== id));
-    toast({
-      title: "Produto excluído!",
-      description: `${produto?.nome} foi removido com sucesso.`,
-    });
-  };
-
-  const addAgendamento = (agendamento: Omit<Agendamento, 'id' | 'createdAt'>) => {
-    const newAgendamento: Agendamento = {
-      ...agendamento,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setAgendamentos(prev => [...prev, newAgendamento]);
-    
-    // Add transaction if agendamento has value
-    if (agendamento.valor) {
-      const newTransacao: Transacao = {
-        id: Date.now().toString() + '_trans',
-        tipo: 'receita',
-        descricao: `Agendamento: ${agendamento.servico} - ${agendamento.clienteNome}`,
-        valor: agendamento.valor,
-        data: agendamento.data,
-        agendamentoId: newAgendamento.id
-      };
-      setTransacoes(prev => [...prev, newTransacao]);
+    const novosProdutos = produtos.filter(produto => produto.id !== id);
+    setProdutos(novosProdutos);
+    if (user?.id) {
+      localStorage.setItem(`produtos_${user.id}`, JSON.stringify(novosProdutos));
     }
+  };
+
+  // Função para atualizar inventário
+  const updateInventory = (productId: string, quantity: number, minStock: number) => {
+    const inventoryItem = inventory.find(item => item.product_id === productId);
     
-    toast({
-      title: "Agendamento criado!",
-      description: `Agendamento para ${agendamento.clienteNome} foi salvo.`,
-    });
-  };
-
-  const editAgendamento = (id: string, agendamentoData: Omit<Agendamento, 'id' | 'createdAt'>) => {
-    setAgendamentos(prev => prev.map(a => a.id === id ? { ...a, ...agendamentoData } : a));
-    toast({
-      title: "Agendamento atualizado!",
-      description: "As informações foram salvas com sucesso.",
-    });
-  };
-
-  const deleteAgendamento = (id: string) => {
-    const agendamento = agendamentos.find(a => a.id === id);
-    setAgendamentos(prev => prev.filter(a => a.id !== id));
-    // Remove related transaction
-    setTransacoes(prev => prev.filter(t => t.agendamentoId !== id));
-    toast({
-      title: "Agendamento excluído!",
-      description: `Agendamento de ${agendamento?.clienteNome} foi removido.`,
-    });
-  };
-
-  const changePlano = (plano: 'autonomo' | 'basico' | 'premium') => {
-    setUser(prev => prev ? { ...prev, plano, testeGratuito: false, diasRestantes: undefined } : null);
-    toast({
-      title: "Plano alterado!",
-      description: `Você agora está no plano ${plano.charAt(0).toUpperCase() + plano.slice(1)}.`,
-    });
+    if (inventoryItem) {
+      const novoInventory = inventory.map(item =>
+        item.product_id === productId 
+          ? { ...item, quantity, min_stock: minStock }
+          : item
+      );
+      setInventory(novoInventory);
+      if (user?.id) {
+        localStorage.setItem(`inventory_${user.id}`, JSON.stringify(novoInventory));
+      }
+    } else {
+      const novoItem: ProdutoInventory = {
+        id: Date.now().toString(),
+        product_id: productId,
+        quantity,
+        min_stock: minStock,
+        cost_per_unit: 0
+      };
+      const novoInventory = [...inventory, novoItem];
+      setInventory(novoInventory);
+      if (user?.id) {
+        localStorage.setItem(`inventory_${user.id}`, JSON.stringify(novoInventory));
+      }
+    }
   };
 
   return (
     <AppContext.Provider value={{
-      user,
-      login,
-      logout,
-      register,
+      // Clientes
       clientes,
       addCliente,
       editCliente,
       deleteCliente,
+      
+      // Serviços
       servicos,
       addServico,
       editServico,
       deleteServico,
+      
+      // Transações
+      transacoes,
+      addTransacao,
+      
+      // Produtos
       produtos,
       addProduto,
       editProduto,
       deleteProduto,
-      agendamentos,
-      addAgendamento,
-      editAgendamento,
-      deleteAgendamento,
-      transacoes,
-      changePlano
+      
+      // Inventário
+      inventory,
+      updateInventory,
     }}>
       {children}
     </AppContext.Provider>
   );
-};
+}
+
+export function useApp() {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
+  return context;
+}

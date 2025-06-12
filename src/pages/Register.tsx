@@ -98,6 +98,21 @@ const Register = () => {
     handleInputChange('phone', formatted);
   };
 
+  const cleanupAuthState = () => {
+    // Remove todas as chaves relacionadas ao Supabase auth do localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    // Remove do sessionStorage também se necessário
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -154,20 +169,50 @@ const Register = () => {
       setIsSubmitting(true);
       
       try {
-        // Primeiro, criar conta no Supabase Auth
-        const { error: authError, data } = await signUp(formData.email, formData.password);
+        console.log('Iniciando processo de cadastro para:', formData.email);
         
-        if (authError) {
-          setErrors(prev => ({ ...prev, register: authError }));
+        // Limpar estado de autenticação anterior para evitar sessões conflitantes
+        cleanupAuthState();
+        
+        // Tentar fazer logout global antes do cadastro
+        try {
+          await supabase.auth.signOut({ scope: 'global' });
+          console.log('Logout global realizado antes do cadastro');
+        } catch (err) {
+          console.log('Não foi possível fazer logout (pode não haver sessão ativa):', err);
+        }
+
+        // Criar conta no Supabase Auth com dados adicionais nos metadados
+        console.log('Criando conta com signUp...');
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              full_name: formData.fullName,
+              business_type: formData.businessType,
+              business_name: formData.businessName,
+              phone: formData.phone
+            }
+          }
+        });
+
+        console.log('Resposta do signUp:', { data, error });
+
+        if (error) {
+          console.error('Erro no signUp:', error);
+          setErrors(prev => ({ ...prev, register: error.message }));
           setIsSubmitting(false);
           return;
         }
 
-        // Se o usuário foi criado com sucesso, salvar perfil
-        if (data?.user) {
-          console.log('Usuário criado, salvando perfil...', data.user.id);
+        // Verificar se o usuário foi criado com sucesso
+        if (data && data.user) {
+          console.log('Usuário criado com sucesso:', data.user.id, data.user.email);
           
           // Salvar dados do perfil na tabela profiles
+          console.log('Salvando dados do perfil...');
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
@@ -184,15 +229,36 @@ const Register = () => {
             toast.error('Conta criada, mas erro ao salvar perfil. Você pode atualizar depois.');
           } else {
             console.log('Perfil salvo com sucesso!');
-            toast.success(isTestMode ? 'Teste gratuito iniciado com sucesso!' : 'Conta criada com sucesso!');
           }
+
+          // Exibir mensagem de sucesso
+          if (isTestMode) {
+            toast.success('Teste gratuito iniciado com sucesso!');
+          } else {
+            toast.success('Conta criada com sucesso!');
+          }
+
+          // Verificar se há sessão ativa para redirecionar
+          if (data.session) {
+            console.log('Sessão ativa detectada, redirecionando para dashboard...');
+            navigate('/dashboard');
+          } else {
+            console.log('Sessão não ativa (confirmação de email pode ser necessária)');
+            // Redirecionar mesmo assim para o dashboard ou página de verificação
+            navigate('/dashboard');
+          }
+        } else if (data && data.session === null) {
+          console.log('Cadastro realizado, mas requer confirmação de email');
+          toast.success('Cadastro realizado! Verifique seu email para confirmar a conta.');
+          navigate('/login');
+        } else {
+          console.error('Resposta de cadastro inesperada:', data);
+          setErrors(prev => ({ ...prev, register: 'Erro inesperado durante o cadastro.' }));
+          setIsSubmitting(false);
         }
 
-        // Redirecionar para dashboard
-        navigate('/dashboard');
-        
       } catch (error) {
-        console.error('Erro no registro:', error);
+        console.error('Erro inesperado no registro:', error);
         setErrors(prev => ({ ...prev, register: 'Erro inesperado. Tente novamente.' }));
         setIsSubmitting(false);
       }

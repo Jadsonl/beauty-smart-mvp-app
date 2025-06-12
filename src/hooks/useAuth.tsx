@@ -20,9 +20,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
+      console.log('useAuth: Obtendo sessão inicial...');
       const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('Initial session:', session?.user?.email);
-      setUser(session?.user || null);
+      if (error) {
+        console.error('useAuth: Erro ao obter sessão inicial:', error);
+      } else {
+        console.log('useAuth: Sessão inicial:', session?.user?.email || 'Nenhuma sessão');
+        setUser(session?.user || null);
+      }
       setLoading(false);
     };
 
@@ -31,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
+        console.log('useAuth: Mudança de estado de autenticação:', event, session?.user?.email || 'Nenhum usuário');
         
         setUser(session?.user || null);
         
@@ -47,23 +52,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Don't set loading here - let onAuthStateChange handle it
+      console.log('useAuth: Tentando fazer login para:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('useAuth: Resposta do signInWithPassword:', { data: data?.user?.email, error: error?.message });
+
       if (error) {
-        console.error('Login error:', error);
-        // Only set loading to false on error since success will be handled by onAuthStateChange
+        console.error('useAuth: Erro de login:', error);
         setLoading(false);
         return { error: 'E-mail ou senha inválidos. Por favor, tente novamente.' };
       }
 
-      // Don't manually set user - onAuthStateChange will handle it
+      console.log('useAuth: Login bem-sucedido para:', data?.user?.email);
       return {};
     } catch (error) {
-      console.error('Unexpected login error:', error);
+      console.error('useAuth: Erro inesperado no login:', error);
       setLoading(false);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
@@ -71,21 +78,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
+      console.log('useAuth: Tentando cadastrar usuário:', email);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
+      console.log('useAuth: Resposta do signUp:', { data: data?.user?.email, error: error?.message });
+
       if (error) {
-        console.error('Signup error:', error);
+        console.error('useAuth: Erro no cadastro:', error);
         setLoading(false);
         return { error: error.message };
       }
 
-      // Don't manually set user - onAuthStateChange will handle it
+      console.log('useAuth: Cadastro bem-sucedido para:', data?.user?.email);
       return {};
     } catch (error) {
-      console.error('Unexpected signup error:', error);
+      console.error('useAuth: Erro inesperado no cadastro:', error);
       setLoading(false);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
@@ -93,13 +104,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      console.log('useAuth: Fazendo logout...');
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error);
+        console.error('useAuth: Erro no logout:', error);
+      } else {
+        console.log('useAuth: Logout realizado com sucesso');
       }
-      // Don't manually set user or loading - onAuthStateChange will handle it
     } catch (error) {
-      console.error('Unexpected logout error:', error);
+      console.error('useAuth: Erro inesperado no logout:', error);
     }
   };
 

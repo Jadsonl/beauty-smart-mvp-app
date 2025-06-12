@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +21,21 @@ const Login = () => {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  const cleanupAuthState = () => {
+    // Remove todas as chaves relacionadas ao Supabase auth do localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    // Remove do sessionStorage também se necessário
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,14 +61,45 @@ const Login = () => {
     if (!newErrors.email && !newErrors.password) {
       setIsSubmitting(true);
       
-      const { error } = await signIn(email, password);
-      
-      if (error) {
-        setErrors({ ...newErrors, login: error });
+      try {
+        console.log('Iniciando processo de login para:', email);
+        
+        // Limpar estado de autenticação anterior
+        cleanupAuthState();
+        
+        // Tentar fazer logout global antes do login
+        try {
+          await supabase.auth.signOut({ scope: 'global' });
+          console.log('Logout global realizado antes do login');
+        } catch (err) {
+          console.log('Não foi possível fazer logout (pode não haver sessão ativa):', err);
+        }
+
+        console.log('Tentando fazer login...');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        console.log('Resposta do signInWithPassword:', { data, error });
+
+        if (error) {
+          console.error('Erro no login:', error);
+          setErrors({ ...newErrors, login: 'E-mail ou senha inválidos. Por favor, tente novamente.' });
+          setIsSubmitting(false);
+        } else if (data && data.user) {
+          console.log('Login bem-sucedido para usuário:', data.user.id, data.user.email);
+          // Navigation will happen automatically when user state changes
+          navigate('/dashboard');
+        } else {
+          console.error('Resposta de login inesperada:', data);
+          setErrors({ ...newErrors, login: 'Erro inesperado durante o login.' });
+          setIsSubmitting(false);
+        }
+      } catch (error) {
+        console.error('Erro inesperado no login:', error);
+        setErrors({ ...newErrors, login: 'Erro inesperado. Tente novamente.' });
         setIsSubmitting(false);
-      } else {
-        // Navigation will happen automatically when user state changes
-        navigate('/dashboard');
       }
     }
   };
