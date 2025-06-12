@@ -2,11 +2,11 @@
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { User, Calendar, MapPin, Bell, Shield, CreditCard } from 'lucide-react';
 
 const Configuracoes = () => {
-  const { user } = useApp();
+  const { user } = useAuth();
 
   return (
     <Layout>
@@ -30,7 +30,7 @@ const Configuracoes = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="text-sm font-medium text-gray-700">Nome/Razão Social</label>
-                <p className="mt-1 text-lg text-gray-900">{user?.name}</p>
+                <p className="mt-1 text-lg text-gray-900">{user?.user_metadata?.full_name || 'Não informado'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">E-mail</label>
@@ -39,16 +39,9 @@ const Configuracoes = () => {
               <div>
                 <label className="text-sm font-medium text-gray-700">Plano Atual</label>
                 <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={user?.plano === 'premium' ? 'default' : 'secondary'}>
-                    {user?.plano === 'autonomo' && 'Autônomo'}
-                    {user?.plano === 'basico' && 'Básico'}
-                    {user?.plano === 'premium' && 'Premium'}
+                  <Badge variant="secondary">
+                    Gratuito
                   </Badge>
-                  {user?.testeGratuito && (
-                    <Badge variant="outline" className="text-pink-600 border-pink-600">
-                      Teste Gratuito
-                    </Badge>
-                  )}
                 </div>
               </div>
               <div>
@@ -75,15 +68,19 @@ const Configuracoes = () => {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Endereço</label>
-                <p className="mt-1 text-gray-600">Não configurado</p>
+                <label className="text-sm font-medium text-gray-700">Nome do Negócio</label>
+                <p className="mt-1 text-gray-600">{user?.user_metadata?.business_name || 'Não configurado'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Tipo de Negócio</label>
+                <p className="mt-1 text-gray-600">{user?.user_metadata?.business_type || 'Não configurado'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">Telefone</label>
-                <p className="mt-1 text-gray-600">Não configurado</p>
+                <p className="mt-1 text-gray-600">{user?.user_metadata?.phone || 'Não configurado'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Horário de Funcionamento</label>
+                <label className="text-sm font-medium text-gray-700">Endereço</label>
                 <p className="mt-1 text-gray-600">Não configurado</p>
               </div>
             </div>
@@ -194,23 +191,12 @@ const Configuracoes = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {user?.testeGratuito ? (
-                <div className="p-4 bg-pink-50 border border-pink-200 rounded-lg">
-                  <h4 className="font-semibold text-pink-800 mb-2">Teste Premium Ativo</h4>
-                  <p className="text-sm text-pink-700">
-                    Você está no período de teste gratuito do Plano Premium.
-                    Restam {user.diasRestantes} dias do seu teste.
-                  </p>
-                  <p className="text-sm text-pink-700 mt-2">
-                    Após o período de teste, você pode escolher continuar com um plano pago.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-medium">Próxima cobrança</p>
-                  <p className="text-sm text-gray-600">Não aplicável (funcionalidade em desenvolvimento)</p>
-                </div>
-              )}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">Plano Gratuito</h4>
+                <p className="text-sm text-blue-700">
+                  Você está utilizando o plano gratuito. Faça upgrade para desbloquear mais recursos.
+                </p>
+              </div>
               
               <div>
                 <p className="font-medium">Método de pagamento</p>

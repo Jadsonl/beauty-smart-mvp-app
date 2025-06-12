@@ -1,18 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
-// Tipos para as novas tabelas
-export interface Agendamento {
-  id: string;
-  client_name: string;
-  client_email: string;
-  client_phone: string;
-  service: string;
-  date: string;
-  time: string;
-  notes?: string;
-}
-
+// Tipos simplificados para o AppContext
 export interface Cliente {
   id: string;
   nome: string;
@@ -36,24 +26,6 @@ export interface Transacao {
   agendamentoId?: string;
 }
 
-export interface Produto {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  category?: string;
-  unit?: string;
-  min_stock_level?: number;
-}
-
-export interface ProdutoInventory {
-  id: string;
-  product_id: string;
-  quantity: number;
-  min_stock: number;
-  cost_per_unit?: number;
-}
-
 interface AppContextType {
   // Clientes
   clientes: Cliente[];
@@ -70,16 +42,6 @@ interface AppContextType {
   // Transações
   transacoes: Transacao[];
   addTransacao: (transacao: Omit<Transacao, 'id'>) => void;
-  
-  // Produtos
-  produtos: Produto[];
-  addProduto: (produto: Omit<Produto, 'id'>) => void;
-  editProduto: (id: string, produto: Partial<Produto>) => void;
-  deleteProduto: (id: string) => void;
-  
-  // Inventário
-  inventory: ProdutoInventory[];
-  updateInventory: (productId: string, quantity: number, minStock: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -87,12 +49,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   
-  // Estados para clientes, serviços, transações, produtos e inventário
+  // Estados para clientes, serviços e transações
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [inventory, setInventory] = useState<ProdutoInventory[]>([]);
 
   // Carregar dados do localStorage quando o usuário estiver logado
   useEffect(() => {
@@ -119,27 +79,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (transacoesStorage) {
         setTransacoes(JSON.parse(transacoesStorage));
       }
-
-      // Carregar produtos
-      const produtosKey = `produtos_${user.id}`;
-      const produtosStorage = localStorage.getItem(produtosKey);
-      if (produtosStorage) {
-        setProdutos(JSON.parse(produtosStorage));
-      }
-
-      // Carregar inventário
-      const inventoryKey = `inventory_${user.id}`;
-      const inventoryStorage = localStorage.getItem(inventoryKey);
-      if (inventoryStorage) {
-        setInventory(JSON.parse(inventoryStorage));
-      }
     } else {
       // Limpar dados quando não há usuário logado
       setClientes([]);
       setServicos([]);
       setTransacoes([]);
-      setProdutos([]);
-      setInventory([]);
     }
   }, [user?.id]);
 
@@ -209,64 +153,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Funções para gerenciar produtos
-  const addProduto = (produto: Omit<Produto, 'id'>) => {
-    const novoProduto = { ...produto, id: Date.now().toString() };
-    const novosProdutos = [...produtos, novoProduto];
-    setProdutos(novosProdutos);
-    if (user?.id) {
-      localStorage.setItem(`produtos_${user.id}`, JSON.stringify(novosProdutos));
-    }
-  };
-
-  const editProduto = (id: string, produtoData: Partial<Produto>) => {
-    const novosProdutos = produtos.map(produto => 
-      produto.id === id ? { ...produto, ...produtoData } : produto
-    );
-    setProdutos(novosProdutos);
-    if (user?.id) {
-      localStorage.setItem(`produtos_${user.id}`, JSON.stringify(novosProdutos));
-    }
-  };
-
-  const deleteProduto = (id: string) => {
-    const novosProdutos = produtos.filter(produto => produto.id !== id);
-    setProdutos(novosProdutos);
-    if (user?.id) {
-      localStorage.setItem(`produtos_${user.id}`, JSON.stringify(novosProdutos));
-    }
-  };
-
-  // Função para atualizar inventário
-  const updateInventory = (productId: string, quantity: number, minStock: number) => {
-    const inventoryItem = inventory.find(item => item.product_id === productId);
-    
-    if (inventoryItem) {
-      const novoInventory = inventory.map(item =>
-        item.product_id === productId 
-          ? { ...item, quantity, min_stock: minStock }
-          : item
-      );
-      setInventory(novoInventory);
-      if (user?.id) {
-        localStorage.setItem(`inventory_${user.id}`, JSON.stringify(novoInventory));
-      }
-    } else {
-      const novoItem: ProdutoInventory = {
-        id: Date.now().toString(),
-        product_id: productId,
-        quantity,
-        min_stock: minStock,
-        cost_per_unit: 0
-      };
-      const novoInventory = [...inventory, novoItem];
-      setInventory(novoInventory);
-      if (user?.id) {
-        localStorage.setItem(`inventory_${user.id}`, JSON.stringify(novoInventory));
-      }
-    }
-  };
-
   return (
     <AppContext.Provider value={{
       // Clientes
@@ -284,16 +170,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // Transações
       transacoes,
       addTransacao,
-      
-      // Produtos
-      produtos,
-      addProduto,
-      editProduto,
-      deleteProduto,
-      
-      // Inventário
-      inventory,
-      updateInventory,
     }}>
       {children}
     </AppContext.Provider>

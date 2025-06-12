@@ -1,29 +1,66 @@
 
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useSupabase } from '@/hooks/useSupabase';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Dashboard = () => {
-  const { user, agendamentos, clientes, transacoes } = useApp();
+  const { user } = useAuth();
+  const { getAgendamentos, getTransacoes } = useSupabase();
+  const [agendamentos, setAgendamentos] = useState<any[]>([]);
+  const [transacoes, setTransacoes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.id) {
+        try {
+          const [agendamentosData, transacoesData] = await Promise.all([
+            getAgendamentos(),
+            getTransacoes()
+          ]);
+          setAgendamentos(agendamentosData);
+          setTransacoes(transacoesData);
+        } catch (error) {
+          console.error('Erro ao carregar dados do dashboard:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [user?.id, getAgendamentos, getTransacoes]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Carregando dados...</p>
+        </div>
+      </Layout>
+    );
+  }
   
   const today = new Date();
   const thisMonth = format(today, 'yyyy-MM');
   const todayStr = format(today, 'yyyy-MM-dd');
   
   // Calculate metrics
-  const agendamentosHoje = agendamentos.filter(a => a.data === todayStr).length;
-  const agendamentosMes = agendamentos.filter(a => a.data.startsWith(thisMonth)).length;
+  const agendamentosHoje = agendamentos.filter(a => a.date === todayStr).length;
+  const agendamentosMes = agendamentos.filter(a => a.date?.startsWith(thisMonth)).length;
   const faturamentoMes = transacoes
-    .filter(t => t.tipo === 'receita' && t.data.startsWith(thisMonth))
-    .reduce((sum, t) => sum + t.valor, 0);
-  const clientesUnicos = clientes.length;
+    .filter(t => t.tipo === 'receita' && t.data?.startsWith(thisMonth))
+    .reduce((sum, t) => sum + (t.valor || 0), 0);
+  const clientesUnicos = 0; // We'll get this from clients later
   
   // Get today's appointments
   const agendamentosDeHoje = agendamentos
-    .filter(a => a.data === todayStr)
-    .sort((a, b) => a.horario.localeCompare(b.horario));
+    .filter(a => a.date === todayStr)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
   return (
     <Layout>
@@ -32,17 +69,8 @@ const Dashboard = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">
-            Bem-vindo de volta, {user?.name}! Aqui está um resumo do seu negócio.
+            Bem-vindo de volta! Aqui está um resumo do seu negócio.
           </p>
-          
-          {user?.testeGratuito && (
-            <div className="mt-4 p-4 bg-pink-50 border border-pink-200 rounded-lg">
-              <h3 className="font-semibold text-pink-800">🎉 Teste Premium Ativo!</h3>
-              <p className="text-pink-700 mt-1">
-                Você tem {user.diasRestantes} dias restantes do seu teste gratuito do Plano Premium.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Metrics Cards */}
@@ -125,17 +153,11 @@ const Dashboard = () => {
                   {agendamentosDeHoje.map((agendamento) => (
                     <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p className="font-medium">{agendamento.clienteNome}</p>
-                        <p className="text-sm text-gray-600">{agendamento.servico}</p>
-                        <p className="text-sm text-gray-500">Prof: {agendamento.profissional}</p>
+                        <p className="font-medium">{agendamento.client_name}</p>
+                        <p className="text-sm text-gray-600">{agendamento.service}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-pink-600">{agendamento.horario}</p>
-                        {agendamento.valor && (
-                          <p className="text-sm text-green-600">
-                            R$ {agendamento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        )}
+                        <p className="font-bold text-pink-600">{agendamento.time}</p>
                       </div>
                     </div>
                   ))}
@@ -165,15 +187,7 @@ const Dashboard = () => {
                   </div>
                 )}
                 
-                {user?.testeGratuito && user?.diasRestantes && user.diasRestantes <= 7 && (
-                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm text-orange-800">
-                      ⏰ Seu teste gratuito expira em {user.diasRestantes} dias.
-                    </p>
-                  </div>
-                )}
-                
-                {agendamentosHoje === 0 && !user?.testeGratuito && (
+                {agendamentosHoje === 0 && (
                   <div className="text-center py-4">
                     <span className="text-4xl mb-2 block">✨</span>
                     <p className="text-gray-500">Tudo em dia! Nenhuma notificação pendente.</p>
