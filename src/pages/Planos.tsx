@@ -32,116 +32,170 @@ const Planos = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="space-y-6 sm:space-y-8">
-          {/* Status Messages */}
-          {success && (
-            <div className="mx-auto max-w-2xl p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-green-800 text-sm sm:text-base">Assinatura Confirmada!</h3>
-                  <p className="text-green-700 text-xs sm:text-sm">Sua assinatura foi ativada com sucesso.</p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {canceled && (
-            <div className="mx-auto max-w-2xl p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-yellow-800 text-sm sm:text-base">Assinatura Cancelada</h3>
-                  <p className="text-yellow-700 text-xs sm:text-sm">O processo de assinatura foi cancelado. Você pode tentar novamente quando quiser.</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Planos de Assinatura</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base px-2">
-              Escolha o plano ideal para o seu negócio. Você pode alterar a qualquer momento.
-            </p>
-            
-            {subscriptionData?.subscribed && (
-              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg max-w-2xl mx-auto">
-                <h3 className="font-semibold text-green-800 mb-2 text-sm sm:text-base">✅ Assinatura Ativa!</h3>
-                <p className="text-green-700 text-xs sm:text-sm">
-                  Plano atual: <strong>{subscriptionData.subscription_tier}</strong>
-                  {subscriptionData.subscription_end && (
-                    <span className="block sm:inline"> - Válido até {new Date(subscriptionData.subscription_end).toLocaleDateString('pt-BR')}</span>
-                  )}
-                </p>
-                <div className="mt-3">
-                  <Link to="/manage-subscription">
-                    <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-                      Gerenciar Assinatura
-                    </Button>
-                  </Link>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+          <div className="space-y-8 sm:space-y-12">
+            {/* Status Messages */}
+            {success && (
+              <div className="mx-auto max-w-2xl p-4 sm:p-6 bg-green-50 border border-green-200 rounded-xl shadow-sm">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-green-800 text-base sm:text-lg">Assinatura Confirmada!</h3>
+                    <p className="text-green-700 text-sm sm:text-base">Sua assinatura foi ativada com sucesso.</p>
+                  </div>
                 </div>
               </div>
             )}
-          </div>
+            
+            {canceled && (
+              <div className="mx-auto max-w-2xl p-4 sm:p-6 bg-yellow-50 border border-yellow-200 rounded-xl shadow-sm">
+                <div className="flex items-center space-x-3">
+                  <XCircle className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-yellow-800 text-base sm:text-lg">Assinatura Cancelada</h3>
+                    <p className="text-yellow-700 text-sm sm:text-base">O processo de assinatura foi cancelado. Você pode tentar novamente quando quiser.</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* Plans Grid - Melhorada para mobile */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
-            <StripeCheckout 
-              planType="AUTONOMO" 
-              isCurrentPlan={subscriptionData?.subscription_tier === 'Autônomo'}
-            />
-            <StripeCheckout 
-              planType="BASICO" 
-              isCurrentPlan={subscriptionData?.subscription_tier === 'Básico'}
-            />
-            <div className="sm:col-span-2 lg:col-span-1">
-              <StripeCheckout 
-                planType="PREMIUM" 
-                isCurrentPlan={subscriptionData?.subscription_tier === 'Premium'}
-              />
+            {/* Header */}
+            <div className="text-center">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+                Planos de Assinatura
+              </h1>
+              <p className="text-gray-600 max-w-3xl mx-auto text-base sm:text-lg lg:text-xl leading-relaxed px-4">
+                Escolha o plano ideal para o seu negócio. Você pode alterar a qualquer momento e sem fidelidade.
+              </p>
+              
+              {subscriptionData?.subscribed && (
+                <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-green-50 border border-green-200 rounded-xl max-w-2xl mx-auto shadow-sm">
+                  <h3 className="font-bold text-green-800 mb-3 text-base sm:text-lg flex items-center justify-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Assinatura Ativa!
+                  </h3>
+                  <p className="text-green-700 text-sm sm:text-base">
+                    Plano atual: <strong className="text-green-800">{subscriptionData.subscription_tier}</strong>
+                    {subscriptionData.subscription_end && (
+                      <span className="block mt-1">
+                        Válido até {new Date(subscriptionData.subscription_end).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </p>
+                  <div className="mt-4">
+                    <Link to="/manage-subscription">
+                      <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 border-green-300 text-green-700 hover:text-green-800">
+                        Gerenciar Assinatura
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Additional Information */}
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-lg sm:text-xl">Informações Adicionais</CardTitle>
-              <CardDescription className="text-sm">Formas de pagamento e política de cancelamento</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6">
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center text-sm sm:text-base">
-                  💳 Formas de Pagamento
-                </h4>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  Aceitamos cartão de crédito, débito e boleto bancário via Stripe. 
-                  A cobrança é feita automaticamente todo mês na data do seu cadastro.
-                </p>
+            {/* Plans Grid - Melhorado e mais responsivo */}
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
+                {/* Plano Autônomo */}
+                <div className="flex">
+                  <StripeCheckout 
+                    planType="AUTONOMO" 
+                    isCurrentPlan={subscriptionData?.subscription_tier === 'Autônomo'}
+                  />
+                </div>
+                
+                {/* Plano Básico */}
+                <div className="flex">
+                  <StripeCheckout 
+                    planType="BASICO" 
+                    isCurrentPlan={subscriptionData?.subscription_tier === 'Básico'}
+                  />
+                </div>
+                
+                {/* Plano Premium */}
+                <div className="flex">
+                  <StripeCheckout 
+                    planType="PREMIUM" 
+                    isCurrentPlan={subscriptionData?.subscription_tier === 'Premium'}
+                  />
+                </div>
               </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center text-sm sm:text-base">
-                  🔄 Alteração de Planos
-                </h4>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  Você pode fazer upgrade ou downgrade do seu plano a qualquer momento. 
-                  As alterações entram em vigor imediatamente.
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center text-sm sm:text-base">
-                  ❌ Cancelamento
-                </h4>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  Sem fidelidade! Você pode cancelar a qualquer momento através do portal do cliente. 
-                  Após o cancelamento, você mantém acesso até o final do período pago.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* Additional Information */}
+            <Card className="max-w-5xl mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="text-center pb-6">
+                <CardTitle className="text-xl sm:text-2xl text-gray-900">Informações Adicionais</CardTitle>
+                <CardDescription className="text-base sm:text-lg text-gray-600">
+                  Formas de pagamento e política de cancelamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 sm:space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start mb-3">
+                      <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-2xl">💳</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 text-base sm:text-lg">
+                        Formas de Pagamento
+                      </h4>
+                    </div>
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                      Aceitamos cartão de crédito, débito e boleto bancário via Stripe. 
+                      A cobrança é feita automaticamente todo mês na data do seu cadastro.
+                    </p>
+                  </div>
+                  
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start mb-3">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-2xl">🔄</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 text-base sm:text-lg">
+                        Alteração de Planos
+                      </h4>
+                    </div>
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                      Você pode fazer upgrade ou downgrade do seu plano a qualquer momento. 
+                      As alterações entram em vigor imediatamente.
+                    </p>
+                  </div>
+                  
+                  <div className="text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start mb-3">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-2xl">❌</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 text-base sm:text-lg">
+                        Cancelamento
+                      </h4>
+                    </div>
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                      Sem fidelidade! Você pode cancelar a qualquer momento através do portal do cliente. 
+                      Após o cancelamento, você mantém acesso até o final do período pago.
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Call to Action */}
+                <div className="text-center pt-6 border-t border-gray-200">
+                  <p className="text-gray-600 text-sm sm:text-base mb-4">
+                    Tem dúvidas sobre qual plano escolher?
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                    <Button variant="outline" className="border-pink-200 text-pink-700 hover:bg-pink-50 w-full sm:w-auto">
+                      Falar com Suporte
+                    </Button>
+                    <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 w-full sm:w-auto">
+                      Ver Demonstração
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </Layout>

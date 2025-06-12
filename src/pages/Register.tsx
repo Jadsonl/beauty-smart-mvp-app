@@ -48,6 +48,9 @@ const Register = () => {
     { value: 'clinic', label: 'Clínica Estética' },
     { value: 'spa', label: 'Spa' },
     { value: 'freelancer', label: 'Profissional Autônomo' },
+    { value: 'manicure', label: 'Manicure/Pedicure' },
+    { value: 'makeup', label: 'Maquiador(a)' },
+    { value: 'hairdresser', label: 'Cabeleireiro(a)' },
     { value: 'other', label: 'Outro' }
   ];
 
@@ -72,7 +75,7 @@ const Register = () => {
   };
 
   const passwordCriteria = getPasswordCriteria(formData.password);
-  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+  const isPasswordValid = Object.values(passwordCriteria).some(Boolean) && formData.password.length >= 6;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -99,13 +102,11 @@ const Register = () => {
   };
 
   const cleanupAuthState = () => {
-    // Remove todas as chaves relacionadas ao Supabase auth do localStorage
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         localStorage.removeItem(key);
       }
     });
-    // Remove do sessionStorage também se necessário
     Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         sessionStorage.removeItem(key);
@@ -169,21 +170,18 @@ const Register = () => {
       setIsSubmitting(true);
       
       try {
-        console.log('Iniciando processo de cadastro para:', formData.email);
+        console.log('Register: Iniciando processo de cadastro para:', formData.email);
         
-        // Limpar estado de autenticação anterior para evitar sessões conflitantes
         cleanupAuthState();
         
-        // Tentar fazer logout global antes do cadastro
         try {
           await supabase.auth.signOut({ scope: 'global' });
-          console.log('Logout global realizado antes do cadastro');
+          console.log('Register: Logout global realizado antes do cadastro');
         } catch (err) {
-          console.log('Não foi possível fazer logout (pode não haver sessão ativa):', err);
+          console.log('Register: Não foi possível fazer logout (pode não haver sessão ativa):', err);
         }
 
-        // Criar conta no Supabase Auth com dados adicionais nos metadados
-        console.log('Criando conta com signUp...');
+        console.log('Register: Criando conta com signUp...');
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -198,21 +196,19 @@ const Register = () => {
           }
         });
 
-        console.log('Resposta do signUp:', { data, error });
+        console.log('Register: Resposta do signUp:', { data: data?.user?.email, error: error?.message });
 
         if (error) {
-          console.error('Erro no signUp:', error);
+          console.error('Register: Erro no signUp:', error);
           setErrors(prev => ({ ...prev, register: error.message }));
           setIsSubmitting(false);
           return;
         }
 
-        // Verificar se o usuário foi criado com sucesso
         if (data && data.user) {
-          console.log('Usuário criado com sucesso:', data.user.id, data.user.email);
+          console.log('Register: Usuário criado com sucesso:', data.user.id, data.user.email);
           
-          // Salvar dados do perfil na tabela profiles
-          console.log('Salvando dados do perfil...');
+          console.log('Register: Salvando dados do perfil...');
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
@@ -225,40 +221,37 @@ const Register = () => {
             });
 
           if (profileError) {
-            console.error('Erro ao salvar perfil:', profileError);
+            console.error('Register: Erro ao salvar perfil:', profileError);
             toast.error('Conta criada, mas erro ao salvar perfil. Você pode atualizar depois.');
           } else {
-            console.log('Perfil salvo com sucesso!');
+            console.log('Register: Perfil salvo com sucesso!');
           }
 
-          // Exibir mensagem de sucesso
           if (isTestMode) {
             toast.success('Teste gratuito iniciado com sucesso!');
           } else {
             toast.success('Conta criada com sucesso!');
           }
 
-          // Verificar se há sessão ativa para redirecionar
           if (data.session) {
-            console.log('Sessão ativa detectada, redirecionando para dashboard...');
+            console.log('Register: Sessão ativa detectada, redirecionando para dashboard...');
             navigate('/dashboard');
           } else {
-            console.log('Sessão não ativa (confirmação de email pode ser necessária)');
-            // Redirecionar mesmo assim para o dashboard ou página de verificação
+            console.log('Register: Sessão não ativa (confirmação de email pode ser necessária)');
             navigate('/dashboard');
           }
         } else if (data && data.session === null) {
-          console.log('Cadastro realizado, mas requer confirmação de email');
+          console.log('Register: Cadastro realizado, mas requer confirmação de email');
           toast.success('Cadastro realizado! Verifique seu email para confirmar a conta.');
           navigate('/login');
         } else {
-          console.error('Resposta de cadastro inesperada:', data);
+          console.error('Register: Resposta de cadastro inesperada:', data);
           setErrors(prev => ({ ...prev, register: 'Erro inesperado durante o cadastro.' }));
           setIsSubmitting(false);
         }
 
       } catch (error) {
-        console.error('Erro inesperado no registro:', error);
+        console.error('Register: Erro inesperado no registro:', error);
         setErrors(prev => ({ ...prev, register: 'Erro inesperado. Tente novamente.' }));
         setIsSubmitting(false);
       }
@@ -267,277 +260,276 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-pink-600 rounded-lg"></div>
-            <span className="text-xl sm:text-2xl font-bold text-pink-600">BelezaSmart</span>
-          </div>
-          <CardTitle className="text-xl sm:text-2xl">
-            {isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta'}
-          </CardTitle>
-          <CardDescription className="text-sm">
-            {isTestMode 
-              ? '30 dias de acesso premium gratuito' 
-              : 'Cadastre-se para acessar a plataforma'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isTestMode && (
-            <div className="mb-6 p-4 bg-pink-50 border border-pink-200 rounded-lg">
-              <h3 className="font-semibold text-pink-800 mb-2 text-sm">🎉 Teste Premium Gratuito!</h3>
-              <p className="text-xs sm:text-sm text-pink-700">
-                Você terá acesso completo ao plano Premium por 30 dias, sem compromisso.
-              </p>
+      <div className="w-full max-w-lg">
+        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6">
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">B</span>
+              </div>
+              <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                BelezaSmart
+              </span>
             </div>
-          )}
+            <CardTitle className="text-xl sm:text-2xl text-gray-900">
+              {isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta'}
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-base text-gray-600">
+              {isTestMode 
+                ? '30 dias de acesso premium gratuito' 
+                : 'Cadastre-se para acessar a plataforma'
+              }
+            </CardDescription>
+          </CardHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-sm">Nome Completo *</Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Seu nome completo"
-                value={formData.fullName}
-                onChange={(e) => handleInputChange('fullName', e.target.value)}
-                className={errors.fullName ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.fullName && (
-                <p className="text-xs text-red-500">{errors.fullName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="businessType" className="text-sm">Tipo de Negócio *</Label>
-              <Select 
-                value={formData.businessType} 
-                onValueChange={(value) => handleInputChange('businessType', value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger className={errors.businessType ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Selecione o tipo de negócio" />
-                </SelectTrigger>
-                <SelectContent>
-                  {businessTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.businessType && (
-                <p className="text-xs text-red-500">{errors.businessType}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="businessName" className="text-sm">Nome do Negócio *</Label>
-              <Input
-                id="businessName"
-                type="text"
-                placeholder="Nome do seu salão/estabelecimento"
-                value={formData.businessName}
-                onChange={(e) => handleInputChange('businessName', e.target.value)}
-                className={errors.businessName ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.businessName && (
-                <p className="text-xs text-red-500">{errors.businessName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm">Telefone *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="(11) 99999-9999"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-                className={errors.phone ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-                maxLength={15}
-              />
-              {errors.phone && (
-                <p className="text-xs text-red-500">{errors.phone}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm">E-mail *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className={errors.email ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email}</p>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm">Senha *</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Sua senha"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={errors.password ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  disabled={isSubmitting}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+          <CardContent>
+            {isTestMode && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 rounded-xl">
+                <h3 className="font-bold text-pink-800 mb-2 text-sm flex items-center gap-2">
+                  🎉 Teste Premium Gratuito!
+                </h3>
+                <p className="text-xs sm:text-sm text-pink-700">
+                  Você terá acesso completo ao plano Premium por 30 dias, sem compromisso.
+                </p>
               </div>
-              {errors.password && (
-                <p className="text-xs text-red-500">{errors.password}</p>
-              )}
-            </div>
+            )}
             
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm">Confirmar Senha *</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirme sua senha"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className={errors.confirmPassword ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  disabled={isSubmitting}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-500">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            {formData.password && (
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-700">Critérios da senha:</p>
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={14} 
-                      className={cn(
-                        passwordCriteria.length ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-xs',
-                      passwordCriteria.length ? 'text-green-700' : 'text-gray-600'
+                <Label htmlFor="fullName" className="text-sm font-medium">Nome Completo *</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={formData.fullName}
+                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  className={cn(
+                    "transition-colors",
+                    errors.fullName ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-pink-500'
+                  )}
+                  disabled={isSubmitting}
+                />
+                {errors.fullName && (
+                  <p className="text-xs text-red-600">{errors.fullName}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="businessType" className="text-sm font-medium">Tipo de Negócio *</Label>
+                  <Select 
+                    value={formData.businessType} 
+                    onValueChange={(value) => handleInputChange('businessType', value)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className={cn(
+                      "transition-colors",
+                      errors.businessType ? 'border-red-300' : 'border-gray-300 focus:border-pink-500'
                     )}>
-                      Pelo menos 6 caracteres
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={14} 
-                      className={cn(
-                        passwordCriteria.uppercase ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-xs',
-                      passwordCriteria.uppercase ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Uma letra maiúscula
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={14} 
-                      className={cn(
-                        passwordCriteria.lowercase ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-xs',
-                      passwordCriteria.lowercase ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Uma letra minúscula
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={14} 
-                      className={cn(
-                        passwordCriteria.number ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-xs',
-                      passwordCriteria.number ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Um número
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check 
-                      size={14} 
-                      className={cn(
-                        passwordCriteria.special ? 'text-green-500' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className={cn(
-                      'text-xs',
-                      passwordCriteria.special ? 'text-green-700' : 'text-gray-600'
-                    )}>
-                      Um caractere especial
-                    </span>
-                  </div>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {businessTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.businessType && (
+                    <p className="text-xs text-red-600">{errors.businessType}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium">Telefone *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(11) 99999-9999"
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    className={cn(
+                      "transition-colors",
+                      errors.phone ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-pink-500'
+                    )}
+                    disabled={isSubmitting}
+                    maxLength={15}
+                  />
+                  {errors.phone && (
+                    <p className="text-xs text-red-600">{errors.phone}</p>
+                  )}
                 </div>
               </div>
-            )}
 
-            {errors.register && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-xs text-red-600">{errors.register}</p>
+              <div className="space-y-2">
+                <Label htmlFor="businessName" className="text-sm font-medium">Nome do Negócio *</Label>
+                <Input
+                  id="businessName"
+                  type="text"
+                  placeholder="Nome do seu salão/estabelecimento"
+                  value={formData.businessName}
+                  onChange={(e) => handleInputChange('businessName', e.target.value)}
+                  className={cn(
+                    "transition-colors",
+                    errors.businessName ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-pink-500'
+                  )}
+                  disabled={isSubmitting}
+                />
+                {errors.businessName && (
+                  <p className="text-xs text-red-600">{errors.businessName}</p>
+                )}
               </div>
-            )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">E-mail *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={cn(
+                    "transition-colors",
+                    errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-pink-500'
+                  )}
+                  disabled={isSubmitting}
+                />
+                {errors.email && (
+                  <p className="text-xs text-red-600">{errors.email}</p>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">Senha *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Sua senha"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      className={cn(
+                        "pr-10 transition-colors",
+                        errors.password ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-pink-500'
+                      )}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                      disabled={isSubmitting}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-xs text-red-600">{errors.password}</p>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar Senha *</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirme sua senha"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      className={cn(
+                        "pr-10 transition-colors",
+                        errors.confirmPassword ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-pink-500'
+                      )}
+                      disabled={isSubmitting}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                      disabled={isSubmitting}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-red-600">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-pink-600 hover:bg-pink-700 text-sm"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Criando conta...' : (isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta')}
-            </Button>
-          </form>
+              {formData.password && (
+                <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-medium text-gray-700">Critérios da senha:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    <div className="flex items-center space-x-2">
+                      <Check 
+                        size={12} 
+                        className={cn(
+                          passwordCriteria.length ? 'text-green-500' : 'text-gray-400'
+                        )} 
+                      />
+                      <span className={cn(
+                        'text-xs',
+                        passwordCriteria.length ? 'text-green-700' : 'text-gray-600'
+                      )}>
+                        6+ caracteres
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Check 
+                        size={12} 
+                        className={cn(
+                          passwordCriteria.number ? 'text-green-500' : 'text-gray-400'
+                        )} 
+                      />
+                      <span className={cn(
+                        'text-xs',
+                        passwordCriteria.number ? 'text-green-700' : 'text-gray-600'
+                      )}>
+                        Um número
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          <div className="mt-6 text-center text-xs sm:text-sm text-gray-600">
-            Já tem uma conta?{' '}
-            <Link 
-              to="/login" 
-              className="text-pink-600 hover:text-pink-700 hover:underline"
-            >
-              Fazer login
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+              {errors.register && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs text-red-600">{errors.register}</p>
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-medium py-3 transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    Criando conta...
+                  </div>
+                ) : (
+                  isTestMode ? 'Iniciar Teste Gratuito' : 'Criar Conta'
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center text-sm text-gray-600">
+              Já tem uma conta?{' '}
+              <Link 
+                to="/login" 
+                className="text-pink-600 hover:text-pink-700 hover:underline font-medium transition-colors"
+              >
+                Fazer login
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

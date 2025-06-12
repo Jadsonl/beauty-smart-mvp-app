@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -72,10 +73,10 @@ export const useSupabase = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // CLIENTES
-  const getClientes = async (): Promise<Cliente[]> => {
-    if (!user) {
-      console.log('getClientes: Usuário não autenticado');
+  // CLIENTES - usando useCallback para evitar loops infinitos
+  const getClientes = useCallback(async (): Promise<Cliente[]> => {
+    if (!user?.id) {
+      console.warn('getClientes: Usuário não autenticado. Não será possível carregar clientes.');
       return [];
     }
     
@@ -102,11 +103,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const addCliente = async (clienteData: Omit<Cliente, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) {
-      console.log('addCliente: Usuário não autenticado');
+  const addCliente = useCallback(async (clienteData: Omit<Cliente, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('addCliente: Usuário não autenticado');
       return false;
     }
     
@@ -134,11 +135,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const updateCliente = async (id: string, clienteData: Partial<Cliente>): Promise<boolean> => {
-    if (!user) {
-      console.log('updateCliente: Usuário não autenticado');
+  const updateCliente = useCallback(async (id: string, clienteData: Partial<Cliente>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('updateCliente: Usuário não autenticado');
       return false;
     }
     
@@ -165,11 +166,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const deleteCliente = async (id: string): Promise<boolean> => {
-    if (!user) {
-      console.log('deleteCliente: Usuário não autenticado');
+  const deleteCliente = useCallback(async (id: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('deleteCliente: Usuário não autenticado');
       return false;
     }
     
@@ -196,12 +197,12 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // SERVIÇOS
-  const getServicos = async (): Promise<Servico[]> => {
-    if (!user) {
-      console.log('getServicos: Usuário não autenticado');
+  // SERVIÇOS - usando useCallback
+  const getServicos = useCallback(async (): Promise<Servico[]> => {
+    if (!user?.id) {
+      console.warn('getServicos: Usuário não autenticado. Não será possível carregar serviços.');
       return [];
     }
     
@@ -228,11 +229,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const addServico = async (servicoData: Omit<Servico, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) {
-      console.log('addServico: Usuário não autenticado');
+  const addServico = useCallback(async (servicoData: Omit<Servico, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('addServico: Usuário não autenticado');
       return false;
     }
     
@@ -260,11 +261,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const updateServico = async (id: string, servicoData: Partial<Servico>): Promise<boolean> => {
-    if (!user) {
-      console.log('updateServico: Usuário não autenticado');
+  const updateServico = useCallback(async (id: string, servicoData: Partial<Servico>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('updateServico: Usuário não autenticado');
       return false;
     }
     
@@ -291,11 +292,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const deleteServico = async (id: string): Promise<boolean> => {
-    if (!user) {
-      console.log('deleteServico: Usuário não autenticado');
+  const deleteServico = useCallback(async (id: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('deleteServico: Usuário não autenticado');
       return false;
     }
     
@@ -322,12 +323,12 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // TRANSAÇÕES
-  const getTransacoes = async (): Promise<Transacao[]> => {
-    if (!user) {
-      console.log('getTransacoes: Usuário não autenticado');
+  // TRANSAÇÕES - usando useCallback
+  const getTransacoes = useCallback(async (): Promise<Transacao[]> => {
+    if (!user?.id) {
+      console.warn('getTransacoes: Usuário não autenticado. Não será possível carregar transações.');
       return [];
     }
     
@@ -348,11 +349,10 @@ export const useSupabase = () => {
       
       console.log('getTransacoes: Dados brutos do Supabase:', data);
       
-      // Mapear os dados do Supabase para a interface Transacao com tipagem correta
       const typedTransactions: Transacao[] = (data || []).map((item: any) => ({
         id: item.id,
         user_id: item.user_id,
-        tipo: item.tipo as "receita" | "despesa", // Afirmar o tipo literal
+        tipo: item.tipo as "receita" | "despesa",
         descricao: item.descricao,
         valor: item.valor,
         data: item.data,
@@ -368,11 +368,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const addTransacao = async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) {
-      console.log('addTransacao: Usuário não autenticado');
+  const addTransacao = useCallback(async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('addTransacao: Usuário não autenticado');
       return false;
     }
     
@@ -400,12 +400,12 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // AGENDAMENTOS - Implementação completa
-  const getAgendamentos = async (): Promise<Agendamento[]> => {
-    if (!user) {
-      console.log('getAgendamentos: Usuário não autenticado');
+  // AGENDAMENTOS - usando useCallback
+  const getAgendamentos = useCallback(async (): Promise<Agendamento[]> => {
+    if (!user?.id) {
+      console.warn('getAgendamentos: Usuário não autenticado. Não será possível carregar agendamentos.');
       return [];
     }
     
@@ -432,11 +432,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const addAgendamento = async (agendamentoData: Omit<Agendamento, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
-    if (!user) {
-      console.log('addAgendamento: Usuário não autenticado');
+  const addAgendamento = useCallback(async (agendamentoData: Omit<Agendamento, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('addAgendamento: Usuário não autenticado');
       return false;
     }
     
@@ -471,11 +471,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const updateAgendamento = async (id: string, agendamentoData: Partial<Agendamento>): Promise<boolean> => {
-    if (!user) {
-      console.log('updateAgendamento: Usuário não autenticado');
+  const updateAgendamento = useCallback(async (id: string, agendamentoData: Partial<Agendamento>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('updateAgendamento: Usuário não autenticado');
       return false;
     }
     
@@ -502,11 +502,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const deleteAgendamento = async (id: string): Promise<boolean> => {
-    if (!user) {
-      console.log('deleteAgendamento: Usuário não autenticado');
+  const deleteAgendamento = useCallback(async (id: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('deleteAgendamento: Usuário não autenticado');
       return false;
     }
     
@@ -533,12 +533,12 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  // PRODUTOS e INVENTÁRIO
-  const getProdutos = async (): Promise<Produto[]> => {
-    if (!user) {
-      console.log('getProdutos: Usuário não autenticado');
+  // PRODUTOS e INVENTÁRIO - usando useCallback
+  const getProdutos = useCallback(async (): Promise<Produto[]> => {
+    if (!user?.id) {
+      console.warn('getProdutos: Usuário não autenticado. Não será possível carregar produtos.');
       return [];
     }
     
@@ -565,11 +565,11 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const getInventory = async (): Promise<ProdutoInventory[]> => {
-    if (!user) {
-      console.log('getInventory: Usuário não autenticado');
+  const getInventory = useCallback(async (): Promise<ProdutoInventory[]> => {
+    if (!user?.id) {
+      console.warn('getInventory: Usuário não autenticado. Não será possível carregar inventário.');
       return [];
     }
     
@@ -595,7 +595,7 @@ export const useSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   return {
     loading,
