@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -67,6 +66,16 @@ export interface ProdutoInventory {
   min_stock: number;
   cost_per_unit?: number;
   updated_at?: string;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  full_name?: string;
+  phone?: string;
+  business_type?: string;
+  business_name?: string;
+  created_at?: string;
 }
 
 export const useSupabase = () => {
@@ -691,6 +700,71 @@ export const useSupabase = () => {
     }
   }, [user]);
 
+  // PROFILE FUNCTIONS
+  const getProfile = useCallback(async (): Promise<Profile | null> => {
+    if (!user?.id) {
+      console.warn('getProfile: Usuário não autenticado. Não será possível carregar perfil.');
+      return null;
+    }
+    
+    setLoading(true);
+    console.log('getProfile: Iniciando busca para user_id:', user.id);
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('getProfile: Erro ao buscar perfil:', error);
+        return null;
+      }
+      
+      console.log('getProfile: Perfil encontrado:', data);
+      return data;
+    } catch (error) {
+      console.error('getProfile: Erro inesperado:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const updateProfile = useCallback(async (profileData: Partial<Profile>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('updateProfile: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('updateProfile: Atualizando perfil para user_id:', user.id, 'dados:', profileData);
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: user.email!,
+          ...profileData,
+        });
+      
+      if (error) {
+        console.error('updateProfile: Erro ao atualizar perfil:', error);
+        return false;
+      }
+      
+      console.log('updateProfile: Perfil atualizado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('updateProfile: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   return {
     loading,
     // Clientes
@@ -716,6 +790,9 @@ export const useSupabase = () => {
     addProduto,
     updateProduto,
     deleteProduto,
-    getInventory
+    getInventory,
+    // Profile
+    getProfile,
+    updateProfile,
   };
 };

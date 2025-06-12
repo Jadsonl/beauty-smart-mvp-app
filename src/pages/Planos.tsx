@@ -94,7 +94,7 @@ const Planos = () => {
               )}
             </div>
 
-            {/* Plans Grid - Corrigido e responsivo */}
+            {/* Plans Grid - Organizado e sem duplicação */}
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* Plano Autônomo */}
@@ -105,7 +105,7 @@ const Planos = () => {
                       Perfeito para profissionais independentes
                     </CardDescription>
                     <div className="mt-4">
-                      <span className="text-3xl sm:text-4xl font-bold text-pink-600">R$ 29</span>
+                      <span className="text-3xl sm:text-4xl font-bold text-pink-600">R$ 55</span>
                       <span className="text-gray-600 text-sm sm:text-base">/mês</span>
                     </div>
                   </CardHeader>
@@ -113,15 +113,23 @@ const Planos = () => {
                     <ul className="space-y-3 mb-6 flex-1">
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Até 50 agendamentos/mês
+                        Perfil profissional completo
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Gestão de clientes
+                        Agendamento online ilimitado
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Controle financeiro básico
+                        Gerenciamento de agenda
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Lembretes automáticos por e-mail
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Histórico de clientes
                       </li>
                     </ul>
                     <div className="mt-auto">
@@ -135,18 +143,18 @@ const Planos = () => {
                 
                 {/* Plano Básico */}
                 <Card className="relative h-full flex flex-col border-2 border-pink-500 hover:border-pink-600 transition-colors shadow-lg bg-pink-50">
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
                     <span className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
                       Mais Popular
                     </span>
                   </div>
-                  <CardHeader className="text-center pb-4">
+                  <CardHeader className="text-center pb-4 pt-6">
                     <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Básico</CardTitle>
                     <CardDescription className="text-sm sm:text-base text-gray-600">
-                      Ideal para pequenos salões
+                      Para salões pequenos com até 3 profissionais
                     </CardDescription>
                     <div className="mt-4">
-                      <span className="text-3xl sm:text-4xl font-bold text-pink-600">R$ 59</span>
+                      <span className="text-3xl sm:text-4xl font-bold text-pink-600">R$ 120</span>
                       <span className="text-gray-600 text-sm sm:text-base">/mês</span>
                     </div>
                   </CardHeader>
@@ -154,19 +162,23 @@ const Planos = () => {
                     <ul className="space-y-3 mb-6 flex-1">
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Agendamentos ilimitados
+                        Perfil do salão personalizado
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Gestão completa de clientes
+                        Agendamento para até 3 profissionais
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Controle de estoque
+                        Agenda centralizada
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Relatórios financeiros
+                        Lembretes automáticos
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Relatórios básicos de faturamento
                       </li>
                     </ul>
                     <div className="mt-auto">
@@ -183,10 +195,10 @@ const Planos = () => {
                   <CardHeader className="text-center pb-4">
                     <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Premium</CardTitle>
                     <CardDescription className="text-sm sm:text-base text-gray-600">
-                      Para salões em crescimento
+                      Para salões maiores com até 10 profissionais
                     </CardDescription>
                     <div className="mt-4">
-                      <span className="text-3xl sm:text-4xl font-bold text-purple-600">R$ 99</span>
+                      <span className="text-3xl sm:text-4xl font-bold text-purple-600">R$ 250</span>
                       <span className="text-gray-600 text-sm sm:text-base">/mês</span>
                     </div>
                   </CardHeader>
@@ -198,15 +210,19 @@ const Planos = () => {
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Múltiplos usuários
+                        Agendamento para até 10 profissionais
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        API e integrações
+                        Gerenciamento avançado
                       </li>
                       <li className="flex items-center text-sm sm:text-base">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                        Suporte prioritário
+                        Lembretes personalizáveis (e-mail + SMS)
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Relatórios personalizados
                       </li>
                     </ul>
                     <div className="mt-auto">
