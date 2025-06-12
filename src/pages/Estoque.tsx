@@ -8,16 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSupabase, type Produto } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Package, AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Estoque = () => {
   const { user } = useAuth();
-  const { getProdutos, getInventory } = useSupabase();
+  const { getProdutos, getInventory, addProduto, updateProduto, deleteProduto } = useSupabase();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [inventario, setInventario] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -32,6 +33,7 @@ const Estoque = () => {
       if (user?.id) {
         try {
           console.log('Estoque: Carregando dados para usuário:', user.id);
+          setLoading(true);
           const [produtosData, inventarioData] = await Promise.all([
             getProdutos(),
             getInventory()
@@ -62,23 +64,88 @@ const Estoque = () => {
 
     try {
       console.log('Estoque: Adicionando produto:', newProduct);
-      // Aqui você implementaria a função addProduto no useSupabase
-      // const success = await addProduto(newProduct);
-      // if (success) {
-      //   toast.success('Produto adicionado com sucesso!');
-      //   setIsDialogOpen(false);
-      //   setNewProduct({ name: '', description: '', price: 0, category: '', unit: '', min_stock_level: 0 });
-      //   // Recarregar dados
-      //   const updatedProdutos = await getProdutos();
-      //   setProdutos(updatedProdutos);
-      // } else {
-      //   toast.error('Erro ao adicionar produto');
-      // }
-      toast.info('Funcionalidade de adicionar produto será implementada em breve');
+      const success = await addProduto(newProduct);
+      if (success) {
+        toast.success('Produto adicionado com sucesso!');
+        setIsDialogOpen(false);
+        setNewProduct({ name: '', description: '', price: 0, category: '', unit: '', min_stock_level: 0 });
+        // Recarregar dados
+        const updatedProdutos = await getProdutos();
+        setProdutos(updatedProdutos);
+      } else {
+        toast.error('Erro ao adicionar produto');
+      }
     } catch (error) {
       console.error('Erro ao adicionar produto:', error);
       toast.error('Erro ao adicionar produto');
     }
+  };
+
+  const handleEditProduct = (produto: Produto) => {
+    setEditingProduct(produto);
+    setNewProduct({
+      name: produto.name,
+      description: produto.description || '',
+      price: produto.price,
+      category: produto.category || '',
+      unit: produto.unit || '',
+      min_stock_level: produto.min_stock_level || 0
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!editingProduct || !newProduct.name.trim()) {
+      toast.error('Nome do produto é obrigatório');
+      return;
+    }
+
+    try {
+      console.log('Estoque: Atualizando produto:', editingProduct.id);
+      const success = await updateProduto(editingProduct.id, newProduct);
+      if (success) {
+        toast.success('Produto atualizado com sucesso!');
+        setIsDialogOpen(false);
+        setEditingProduct(null);
+        setNewProduct({ name: '', description: '', price: 0, category: '', unit: '', min_stock_level: 0 });
+        // Recarregar dados
+        const updatedProdutos = await getProdutos();
+        setProdutos(updatedProdutos);
+      } else {
+        toast.error('Erro ao atualizar produto');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      toast.error('Erro ao atualizar produto');
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto?')) {
+      return;
+    }
+
+    try {
+      console.log('Estoque: Deletando produto:', id);
+      const success = await deleteProduto(id);
+      if (success) {
+        toast.success('Produto excluído com sucesso!');
+        // Recarregar dados
+        const updatedProdutos = await getProdutos();
+        setProdutos(updatedProdutos);
+      } else {
+        toast.error('Erro ao excluir produto');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir produto:', error);
+      toast.error('Erro ao excluir produto');
+    }
+  };
+
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingProduct(null);
+    setNewProduct({ name: '', description: '', price: 0, category: '', unit: '', min_stock_level: 0 });
   };
 
   if (loading) {
@@ -93,7 +160,7 @@ const Estoque = () => {
 
   const produtosComBaixoEstoque = produtos.filter(produto => {
     const inventarioProduto = inventario.find(inv => inv.product_id === produto.id);
-    return inventarioProduto && inventarioProduto.quantity <= produto.min_stock_level;
+    return inventarioProduto && inventarioProduto.quantity <= (produto.min_stock_level || 0);
   });
 
   return (
@@ -115,11 +182,11 @@ const Estoque = () => {
                 Adicionar Produto
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md mx-4 sm:max-w-lg">
+            <DialogContent className="max-w-md mx-4 sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Adicionar Novo Produto</DialogTitle>
+                <DialogTitle>{editingProduct ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
                 <DialogDescription>
-                  Preencha as informações do produto que deseja adicionar ao estoque.
+                  {editingProduct ? 'Edite as informações do produto.' : 'Preencha as informações do produto que deseja adicionar ao estoque.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -185,10 +252,13 @@ const Estoque = () => {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                  <Button onClick={handleAddProduct} className="bg-pink-600 hover:bg-pink-700 flex-1">
-                    Adicionar Produto
+                  <Button 
+                    onClick={editingProduct ? handleUpdateProduct : handleAddProduct} 
+                    className="bg-pink-600 hover:bg-pink-700 flex-1"
+                  >
+                    {editingProduct ? 'Atualizar Produto' : 'Adicionar Produto'}
                   </Button>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                  <Button variant="outline" onClick={closeDialog} className="flex-1">
                     Cancelar
                   </Button>
                 </div>
@@ -265,12 +335,32 @@ const Estoque = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {produtos.map((produto) => {
                   const inventarioProduto = inventario.find(inv => inv.product_id === produto.id);
-                  const isLowStock = inventarioProduto && inventarioProduto.quantity <= produto.min_stock_level;
+                  const isLowStock = inventarioProduto && inventarioProduto.quantity <= (produto.min_stock_level || 0);
                   
                   return (
-                    <Card key={produto.id} className={`${isLowStock ? 'border-orange-300' : 'border-gray-200'}`}>
+                    <Card key={produto.id} className={`${isLowStock ? 'border-orange-300' : 'border-gray-200'} relative`}>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base sm:text-lg truncate">{produto.name}</CardTitle>
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-base sm:text-lg truncate flex-1">{produto.name}</CardTitle>
+                          <div className="flex gap-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditProduct(produto)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteProduct(produto.id)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
                         {produto.description && (
                           <CardDescription className="text-xs sm:text-sm line-clamp-2">
                             {produto.description}

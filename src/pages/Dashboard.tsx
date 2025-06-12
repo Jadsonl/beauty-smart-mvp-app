@@ -19,6 +19,7 @@ const Dashboard = () => {
       if (user?.id) {
         try {
           console.log('Dashboard: Carregando dados para usuário:', user.id);
+          setLoading(true);
           const [agendamentosData, transacoesData] = await Promise.all([
             getAgendamentos(),
             getTransacoes()
@@ -82,11 +83,11 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Faturamento do Mês</CardTitle>
-              <span className="text-xl sm:text-2xl">💰</span>
+              <CardTitle className="text-xs sm:text-sm font-medium">Faturamento do Mês</CardTitle>
+              <span className="text-lg sm:text-2xl">💰</span>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-green-600">
+              <div className="text-lg sm:text-2xl font-bold text-green-600">
                 R$ {faturamentoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -97,11 +98,11 @@ const Dashboard = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Agendamentos do Mês</CardTitle>
-              <span className="text-xl sm:text-2xl">📅</span>
+              <CardTitle className="text-xs sm:text-sm font-medium">Agendamentos do Mês</CardTitle>
+              <span className="text-lg sm:text-2xl">📅</span>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">{agendamentosMes}</div>
+              <div className="text-lg sm:text-2xl font-bold">{agendamentosMes}</div>
               <p className="text-xs text-muted-foreground">
                 {format(today, 'MMMM/yyyy', { locale: ptBR })}
               </p>
@@ -110,11 +111,11 @@ const Dashboard = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Agendamentos Hoje</CardTitle>
-              <span className="text-xl sm:text-2xl">⏰</span>
+              <CardTitle className="text-xs sm:text-sm font-medium">Agendamentos Hoje</CardTitle>
+              <span className="text-lg sm:text-2xl">⏰</span>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-blue-600">{agendamentosHoje}</div>
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">{agendamentosHoje}</div>
               <p className="text-xs text-muted-foreground">
                 {format(today, 'dd/MM/yyyy', { locale: ptBR })}
               </p>
@@ -123,11 +124,11 @@ const Dashboard = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clientes Únicos</CardTitle>
-              <span className="text-xl sm:text-2xl">👥</span>
+              <CardTitle className="text-xs sm:text-sm font-medium">Clientes Únicos</CardTitle>
+              <span className="text-lg sm:text-2xl">👥</span>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-purple-600">{clientesUnicos}</div>
+              <div className="text-lg sm:text-2xl font-bold text-purple-600">{clientesUnicos}</div>
               <p className="text-xs text-muted-foreground">
                 Total cadastrados
               </p>
@@ -150,18 +151,18 @@ const Dashboard = () => {
             <CardContent>
               {agendamentosDeHoje.length === 0 ? (
                 <div className="text-center py-6 sm:py-8">
-                  <span className="text-3xl sm:text-4xl mb-4 block">📅</span>
+                  <span className="text-2xl sm:text-4xl mb-4 block">📅</span>
                   <p className="text-gray-500 text-sm sm:text-base">Nenhum agendamento para hoje.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {agendamentosDeHoje.map((agendamento) => (
-                    <div key={agendamento.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={agendamento.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-50 rounded-lg gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm sm:text-base truncate">{agendamento.client_name}</p>
                         <p className="text-xs sm:text-sm text-gray-600 truncate">{agendamento.service}</p>
                       </div>
-                      <div className="text-right ml-4">
+                      <div className="text-right">
                         <p className="font-bold text-pink-600 text-sm sm:text-base">{agendamento.time}</p>
                       </div>
                     </div>
@@ -194,7 +195,7 @@ const Dashboard = () => {
                 
                 {agendamentosHoje === 0 && (
                   <div className="text-center py-4">
-                    <span className="text-3xl sm:text-4xl mb-2 block">✨</span>
+                    <span className="text-2xl sm:text-4xl mb-2 block">✨</span>
                     <p className="text-gray-500 text-xs sm:text-sm">Tudo em dia! Nenhuma notificação pendente.</p>
                   </div>
                 )}

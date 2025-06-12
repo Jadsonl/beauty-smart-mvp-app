@@ -94,32 +94,129 @@ const Planos = () => {
               )}
             </div>
 
-            {/* Plans Grid - Melhorado e mais responsivo */}
+            {/* Plans Grid - Corrigido e responsivo */}
             <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* Plano Autônomo */}
-                <div className="flex">
-                  <StripeCheckout 
-                    planType="AUTONOMO" 
-                    isCurrentPlan={subscriptionData?.subscription_tier === 'Autônomo'}
-                  />
-                </div>
+                <Card className="relative h-full flex flex-col border-2 hover:border-pink-300 transition-colors shadow-lg">
+                  <CardHeader className="text-center pb-4">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Autônomo</CardTitle>
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                      Perfeito para profissionais independentes
+                    </CardDescription>
+                    <div className="mt-4">
+                      <span className="text-3xl sm:text-4xl font-bold text-pink-600">R$ 29</span>
+                      <span className="text-gray-600 text-sm sm:text-base">/mês</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col">
+                    <ul className="space-y-3 mb-6 flex-1">
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Até 50 agendamentos/mês
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Gestão de clientes
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Controle financeiro básico
+                      </li>
+                    </ul>
+                    <div className="mt-auto">
+                      <StripeCheckout 
+                        planType="AUTONOMO" 
+                        isCurrentPlan={subscriptionData?.subscription_tier === 'Autônomo'}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 {/* Plano Básico */}
-                <div className="flex">
-                  <StripeCheckout 
-                    planType="BASICO" 
-                    isCurrentPlan={subscriptionData?.subscription_tier === 'Básico'}
-                  />
-                </div>
+                <Card className="relative h-full flex flex-col border-2 border-pink-500 hover:border-pink-600 transition-colors shadow-lg bg-pink-50">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
+                      Mais Popular
+                    </span>
+                  </div>
+                  <CardHeader className="text-center pb-4">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Básico</CardTitle>
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                      Ideal para pequenos salões
+                    </CardDescription>
+                    <div className="mt-4">
+                      <span className="text-3xl sm:text-4xl font-bold text-pink-600">R$ 59</span>
+                      <span className="text-gray-600 text-sm sm:text-base">/mês</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col">
+                    <ul className="space-y-3 mb-6 flex-1">
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Agendamentos ilimitados
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Gestão completa de clientes
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Controle de estoque
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Relatórios financeiros
+                      </li>
+                    </ul>
+                    <div className="mt-auto">
+                      <StripeCheckout 
+                        planType="BASICO" 
+                        isCurrentPlan={subscriptionData?.subscription_tier === 'Básico'}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 {/* Plano Premium */}
-                <div className="flex">
-                  <StripeCheckout 
-                    planType="PREMIUM" 
-                    isCurrentPlan={subscriptionData?.subscription_tier === 'Premium'}
-                  />
-                </div>
+                <Card className="relative h-full flex flex-col border-2 hover:border-purple-300 transition-colors shadow-lg md:col-span-2 lg:col-span-1">
+                  <CardHeader className="text-center pb-4">
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">Premium</CardTitle>
+                    <CardDescription className="text-sm sm:text-base text-gray-600">
+                      Para salões em crescimento
+                    </CardDescription>
+                    <div className="mt-4">
+                      <span className="text-3xl sm:text-4xl font-bold text-purple-600">R$ 99</span>
+                      <span className="text-gray-600 text-sm sm:text-base">/mês</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col">
+                    <ul className="space-y-3 mb-6 flex-1">
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Tudo do plano Básico
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Múltiplos usuários
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        API e integrações
+                      </li>
+                      <li className="flex items-center text-sm sm:text-base">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        Suporte prioritário
+                      </li>
+                    </ul>
+                    <div className="mt-auto">
+                      <StripeCheckout 
+                        planType="PREMIUM" 
+                        isCurrentPlan={subscriptionData?.subscription_tier === 'Premium'}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
 
@@ -179,7 +276,6 @@ const Planos = () => {
                   </div>
                 </div>
                 
-                {/* Call to Action */}
                 <div className="text-center pt-6 border-t border-gray-200">
                   <p className="text-gray-600 text-sm sm:text-base mb-4">
                     Tem dúvidas sobre qual plano escolher?

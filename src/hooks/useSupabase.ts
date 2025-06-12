@@ -567,6 +567,100 @@ export const useSupabase = () => {
     }
   }, [user]);
 
+  const addProduto = useCallback(async (produtoData: Omit<Produto, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('addProduto: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('addProduto: Adicionando produto para user_id:', user.id, 'dados:', produtoData);
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          user_id: user.id,
+          ...produtoData
+        });
+      
+      if (error) {
+        console.error('addProduto: Erro ao criar produto:', error);
+        return false;
+      }
+      
+      console.log('addProduto: Produto criado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('addProduto: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const updateProduto = useCallback(async (id: string, produtoData: Partial<Produto>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('updateProduto: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('updateProduto: Atualizando produto', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update(produtoData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('updateProduto: Erro ao atualizar produto:', error);
+        return false;
+      }
+      
+      console.log('updateProduto: Produto atualizado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('updateProduto: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const deleteProduto = useCallback(async (id: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('deleteProduto: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('deleteProduto: Deletando produto', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('deleteProduto: Erro ao deletar produto:', error);
+        return false;
+      }
+      
+      console.log('deleteProduto: Produto deletado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('deleteProduto: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   const getInventory = useCallback(async (): Promise<ProdutoInventory[]> => {
     if (!user?.id) {
       console.warn('getInventory: Usuário não autenticado. Não será possível carregar inventário.');
@@ -619,6 +713,9 @@ export const useSupabase = () => {
     deleteAgendamento,
     // Produtos e Inventário
     getProdutos,
+    addProduto,
+    updateProduto,
+    deleteProduto,
     getInventory
   };
 };
