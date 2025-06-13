@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,34 +145,42 @@ const Financeiro = () => {
   };
 
   const exportToPDF = async () => {
-    const { jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    
-    doc.text('Relatório Financeiro', 20, 20);
-    doc.text(`Período: ${format(currentDate, 'MMMM yyyy', { locale: ptBR })}`, 20, 30);
-    
-    let y = 50;
-    filteredTransacoes.forEach(t => {
-      doc.text(`${format(new Date(t.data), 'dd/MM/yyyy')} - ${t.tipo} - ${t.descricao} - R$ ${t.valor.toFixed(2)}`, 20, y);
-      y += 10;
-    });
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      
+      doc.text('Relatório Financeiro', 20, 20);
+      doc.text(`Período: ${format(currentDate, 'MMMM yyyy', { locale: ptBR })}`, 20, 30);
+      
+      let y = 50;
+      filteredTransacoes.forEach(t => {
+        doc.text(`${format(new Date(t.data), 'dd/MM/yyyy')} - ${t.tipo} - ${t.descricao} - R$ ${t.valor.toFixed(2)}`, 20, y);
+        y += 10;
+      });
 
-    doc.save(`relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.pdf`);
+      doc.save(`relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.pdf`);
+    } catch (error) {
+      toast.error('Erro ao gerar PDF');
+    }
   };
 
   const exportToExcel = async () => {
-    const XLSX = await import('xlsx');
-    const ws = XLSX.utils.json_to_sheet(
-      filteredTransacoes.map(t => ({
-        Data: format(new Date(t.data), 'dd/MM/yyyy'),
-        Tipo: t.tipo,
-        Descrição: t.descricao,
-        Valor: t.valor
-      }))
-    );
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Transações');
-    XLSX.writeFile(wb, `relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.xlsx`);
+    try {
+      const XLSX = await import('xlsx');
+      const ws = XLSX.utils.json_to_sheet(
+        filteredTransacoes.map(t => ({
+          Data: format(new Date(t.data), 'dd/MM/yyyy'),
+          Tipo: t.tipo,
+          Descrição: t.descricao,
+          Valor: t.valor
+        }))
+      );
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Transações');
+      XLSX.writeFile(wb, `relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.xlsx`);
+    } catch (error) {
+      toast.error('Erro ao gerar Excel');
+    }
   };
 
   // Calculate financial metrics para o mês atual

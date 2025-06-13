@@ -3,7 +3,7 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import StripeCheckout from '@/components/StripeCheckout';
-import { useStripe } from '@/hooks/useStr4pe';
+import { useStripe } from '@/hooks/useStripe';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle } from 'lucide-react';
