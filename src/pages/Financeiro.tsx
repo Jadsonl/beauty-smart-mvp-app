@@ -142,6 +142,7 @@ const Financeiro = () => {
     a.download = `relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+    toast.success('Relatório CSV exportado com sucesso!');
   };
 
   const exportToPDF = async () => {
@@ -156,9 +157,14 @@ const Financeiro = () => {
       filteredTransacoes.forEach(t => {
         doc.text(`${format(new Date(t.data), 'dd/MM/yyyy')} - ${t.tipo} - ${t.descricao} - R$ ${t.valor.toFixed(2)}`, 20, y);
         y += 10;
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
       });
 
       doc.save(`relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.pdf`);
+      toast.success('Relatório PDF exportado com sucesso!');
     } catch (error) {
       toast.error('Erro ao gerar PDF');
     }
@@ -178,6 +184,7 @@ const Financeiro = () => {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Transações');
       XLSX.writeFile(wb, `relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.xlsx`);
+      toast.success('Relatório Excel exportado com sucesso!');
     } catch (error) {
       toast.error('Erro ao gerar Excel');
     }
