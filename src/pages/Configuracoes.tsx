@@ -1,412 +1,194 @@
 
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/useAuth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSupabase } from '@/hooks/useSupabase';
-import { User, Calendar, Bell, Shield, CreditCard, Save, Edit } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { Save, User, Building } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface ProfileData {
-  full_name?: string;
-  phone?: string;
-  business_type?: string;
-  business_name?: string;
-  address?: string;
-}
 
 const Configuracoes = () => {
   const { user } = useAuth();
-  const { getProfile, updateProfile } = useSupabase();
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({
+  const { getProfile, updateProfile, loading } = useSupabase();
+  const [profile, setProfile] = useState({
     full_name: '',
     phone: '',
-    business_type: '',
     business_name: '',
-    address: '',
+    business_type: '',
+    address: ''
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      if (user?.id) {
-        const profile = await getProfile();
-        if (profile) {
-          setProfileData({
-            full_name: profile.full_name || '',
-            phone: profile.phone || '',
-            business_type: profile.business_type || '',
-            business_name: profile.business_name || '',
-            address: profile.address || '',
-          });
-        }
-      }
-    };
-
     loadProfile();
-  }, [user, getProfile]);
+  }, [user]);
 
-  const handleSave = async () => {
+  const loadProfile = async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const profileData = await getProfile();
+      if (profileData) {
+        setProfile({
+          full_name: profileData.full_name || '',
+          phone: profileData.phone || '',
+          business_name: profileData.business_name || '',
+          business_type: profileData.business_type || '',
+          address: profileData.address || ''
+        });
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar perfil');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
     if (!user?.id) {
       toast.error('Usuário não autenticado');
       return;
     }
 
-    setLoading(true);
+    setIsSaving(true);
     try {
-      const success = await updateProfile(profileData);
+      const success = await updateProfile(profile);
       if (success) {
         toast.success('Perfil atualizado com sucesso!');
-        setIsEditing(false);
       } else {
-        toast.error('Erro ao atualizar perfil. Tente novamente.');
+        toast.error('Erro ao atualizar perfil');
       }
     } catch (error) {
-      toast.error('Erro inesperado ao atualizar perfil.');
+      toast.error('Erro ao salvar alterações');
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
-  const handleInputChange = (field: keyof ProfileData, value: string) => {
-    setProfileData(prev => ({
+  const handleInputChange = (field: string, value: string) => {
+    setProfile(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="space-y-6 p-4 sm:p-6">
+          <div className="text-center py-8">
+            <p className="text-gray-600">Carregando configurações...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="space-y-6 sm:space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Configurações</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie as configurações da sua conta e estabelecimento</p>
+      <div className="space-y-6 p-4 sm:p-6">
+        {/* Perfil Pessoal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Informações Pessoais
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="full_name">Nome Completo</Label>
+                <Input
+                  id="full_name"
+                  value={profile.full_name}
+                  onChange={(e) => handleInputChange('full_name', e.target.value)}
+                  placeholder="Seu nome completo"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={profile.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="address">Endereço</Label>
+              <Input
+                id="address"
+                value={profile.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="Endereço completo do estabelecimento"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Informações do Negócio */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Informações do Negócio
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="business_name">Nome do Negócio</Label>
+                <Input
+                  id="business_name"
+                  value={profile.business_name}
+                  onChange={(e) => handleInputChange('business_name', e.target.value)}
+                  placeholder="Nome do seu salão/estabelecimento"
+                />
+              </div>
+              <div>
+                <Label htmlFor="business_type">Tipo de Negócio</Label>
+                <Select
+                  value={profile.business_type}
+                  onValueChange={(value) => handleInputChange('business_type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="salao">Salão de Beleza</SelectItem>
+                    <SelectItem value="barbearia">Barbearia</SelectItem>
+                    <SelectItem value="estetica">Clínica de Estética</SelectItem>
+                    <SelectItem value="spa">Spa</SelectItem>
+                    <SelectItem value="manicure">Manicure/Pedicure</SelectItem>
+                    <SelectItem value="massagem">Massoterapia</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Botão Salvar */}
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleSaveProfile}
+            disabled={isSaving || loading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+          </Button>
         </div>
-
-        {/* Profile Information */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <User className="h-5 w-5" />
-                  Informações da Conta
-                </CardTitle>
-                <CardDescription className="text-sm sm:text-base">Dados principais do seu perfil</CardDescription>
-              </div>
-              <Button
-                variant={isEditing ? "outline" : "default"}
-                size="sm"
-                onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}
-                className="w-full sm:w-auto"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                {isEditing ? 'Cancelar' : 'Editar'}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <Label className="text-xs sm:text-sm font-medium text-gray-700">E-mail</Label>
-                <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
-                  {user?.email}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">O e-mail não pode ser alterado aqui</p>
-              </div>
-              
-              <div>
-                <Label htmlFor="full_name" className="text-xs sm:text-sm font-medium text-gray-700">
-                  Nome/Razão Social
-                </Label>
-                {isEditing ? (
-                  <Input
-                    id="full_name"
-                    value={profileData.full_name}
-                    onChange={(e) => handleInputChange('full_name', e.target.value)}
-                    placeholder="Digite seu nome completo"
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
-                    {profileData.full_name || 'Não informado'}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="phone" className="text-xs sm:text-sm font-medium text-gray-700">
-                  Telefone
-                </Label>
-                {isEditing ? (
-                  <Input
-                    id="phone"
-                    value={profileData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="(11) 99999-9999"
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
-                    {profileData.phone || 'Não informado'}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="business_type" className="text-xs sm:text-sm font-medium text-gray-700">
-                  Tipo de Negócio
-                </Label>
-                {isEditing ? (
-                  <Input
-                    id="business_type"
-                    value={profileData.business_type}
-                    onChange={(e) => handleInputChange('business_type', e.target.value)}
-                    placeholder="Ex: Salão de Beleza, Barbearia"
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
-                    {profileData.business_type || 'Não informado'}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="business_name" className="text-xs sm:text-sm font-medium text-gray-700">
-                  Nome do Negócio
-                </Label>
-                {isEditing ? (
-                  <Input
-                    id="business_name"
-                    value={profileData.business_name}
-                    onChange={(e) => handleInputChange('business_name', e.target.value)}
-                    placeholder="Ex: Salão Beleza & Estilo"
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
-                    {profileData.business_name || 'Não informado'}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="address" className="text-xs sm:text-sm font-medium text-gray-700">
-                  Endereço
-                </Label>
-                {isEditing ? (
-                  <Input
-                    id="address"
-                    value={profileData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    placeholder="Rua, Número, Bairro, Cidade"
-                    className="mt-1"
-                  />
-                ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
-                    {profileData.address || 'Não informado'}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label className="text-xs sm:text-sm font-medium text-gray-700">Plano Atual</Label>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant="secondary">
-                    Gratuito
-                  </Badge>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-xs sm:text-sm font-medium text-gray-700">Status da Conta</Label>
-                <div className="mt-1">
-                  <Badge variant="default" className="bg-green-600">
-                    Ativa
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {isEditing && (
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                <Button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {loading ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  disabled={loading}
-                  className="w-full sm:w-auto"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Schedule Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Calendar className="h-5 w-5" />
-              Configurações de Agenda
-            </CardTitle>
-            <CardDescription className="text-sm sm:text-base">Personalize como sua agenda funciona</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs sm:text-sm font-medium text-gray-700">Intervalo entre agendamentos</label>
-                <p className="mt-1 text-gray-600 text-sm sm:text-base">30 minutos (padrão)</p>
-              </div>
-              <div>
-                <label className="text-xs sm:text-sm font-medium text-gray-700">Antecedência mínima</label>
-                <p className="mt-1 text-gray-600 text-sm sm:text-base">2 horas (padrão)</p>
-              </div>
-              <div>
-                <label className="text-xs sm:text-sm font-medium text-gray-700">Dias de funcionamento</label>
-                <p className="mt-1 text-gray-600 text-sm sm:text-base">Segunda a Sábado (padrão)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notifications Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Bell className="h-5 w-5" />
-              Notificações
-            </CardTitle>
-            <CardDescription className="text-sm sm:text-base">Configure como você quer receber notificações</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <div>
-                  <p className="font-medium text-sm sm:text-base">E-mail de novos agendamentos</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Receba um e-mail quando um cliente agendar</p>
-                </div>
-                <Badge variant="default" className="bg-green-600 w-fit">Ativado</Badge>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <div>
-                  <p className="font-medium text-sm sm:text-base">Lembrete de agendamentos</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Lembrete 1 hora antes do agendamento</p>
-                </div>
-                <Badge variant="default" className="bg-green-600 w-fit">Ativado</Badge>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <div>
-                  <p className="font-medium text-sm sm:text-base">Relatórios semanais</p>
-                  <p className="text-xs sm:text-sm text-gray-600">Resumo semanal por e-mail</p>
-                </div>
-                <Badge variant="secondary" className="w-fit">Desativado</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Shield className="h-5 w-5" />
-              Segurança
-            </CardTitle>
-            <CardDescription className="text-sm sm:text-base">Configurações de segurança da sua conta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="font-medium text-sm sm:text-base">Última alteração de senha</p>
-                <p className="text-xs sm:text-sm text-gray-600">Não disponível</p>
-              </div>
-              <div>
-                <p className="font-medium text-sm sm:text-base">Autenticação de dois fatores</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="secondary">Não configurado</Badge>
-                  <span className="text-xs sm:text-sm text-gray-600">(Recomendado)</span>
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-sm sm:text-base">Sessões ativas</p>
-                <p className="text-xs sm:text-sm text-gray-600">1 sessão ativa (esta sessão)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Billing Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <CreditCard className="h-5 w-5" />
-              Informações de Cobrança
-            </CardTitle>
-            <CardDescription className="text-sm sm:text-base">Detalhes sobre sua assinatura e pagamentos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2 text-sm sm:text-base">Plano Gratuito</h4>
-                <p className="text-xs sm:text-sm text-blue-700">
-                  Você está utilizando o plano gratuito. Faça upgrade para desbloquear mais recursos.
-                </p>
-              </div>
-              
-              <div>
-                <p className="font-medium text-sm sm:text-base">Método de pagamento</p>
-                <p className="text-xs sm:text-sm text-gray-600">Nenhum método cadastrado</p>
-              </div>
-              
-              <div>
-                <p className="font-medium text-sm sm:text-base">Histórico de pagamentos</p>
-                <p className="text-xs sm:text-sm text-gray-600">Nenhum pagamento registrado</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* System Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Informações do Sistema</CardTitle>
-            <CardDescription className="text-sm sm:text-base">Detalhes técnicos e suporte</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="font-medium text-sm sm:text-base">Versão do Sistema</p>
-                <p className="text-xs sm:text-sm text-gray-600">BelezaSmart v1.0.0 (MVP)</p>
-              </div>
-              <div>
-                <p className="font-medium text-sm sm:text-base">Localização</p>
-                <p className="text-xs sm:text-sm text-gray-600">Salvador, Bahia - Brasil (GMT-3)</p>
-              </div>
-              <div>
-                <p className="font-medium text-sm sm:text-base">Suporte</p>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  Para dúvidas ou suporte, entre em contato: suporte@belezasmart.com
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );

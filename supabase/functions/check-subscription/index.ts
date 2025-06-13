@@ -14,45 +14,88 @@ serve(async (req) => {
   }
 
   try {
+    // Validar variáveis de ambiente críticas
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
     if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY não configurada");
+      return new Response(JSON.stringify({ 
+        error: "Configuração do Stripe não encontrada",
+        subscribed: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
     }
 
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      return new Response(JSON.stringify({ 
+        error: "Configuração do Supabase não encontrada",
+        subscribed: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
 
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey, { 
+      auth: { persistSession: false } 
+    });
 
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Validar token de autorização
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("Token de autorização não fornecido");
+      return new Response(JSON.stringify({ 
+        error: "Token de autorização não fornecido",
+        subscribed: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
     const token = authHeader.replace("Bearer ", "");
     
-    const { data, error } = await supabaseAuth.auth.getUser(token);
+    // Verificar usuário autenticado
+    const { data, error: authError } = await supabaseAuth.auth.getUser(token);
     
-    if (error || !data.user) {
-      throw new Error("Usuário não autenticado");
+    if (authError || !data.user) {
+      return new Response(JSON.stringify({ 
+        error: "Usuário não autenticado",
+        subscribed: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
     }
 
     const user = data.user;
     
+    if (!user.email) {
+      return new Response(JSON.stringify({ 
+        error: "Email do usuário não encontrado",
+        subscribed: false 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    // Inicializar Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
+    // Buscar cliente no Stripe
     const customers = await stripe.customers.list({
-      email: user.email!,
+      email: user.email,
       limit: 1
     });
 
     if (customers.data.length === 0) {
+      // Cliente não encontrado no Stripe, atualizar banco
       await supabaseService.from("subscribers").upsert({
         user_id: user.id,
         email: user.email,
@@ -70,6 +113,7 @@ serve(async (req) => {
 
     const customerId = customers.data[0].id;
 
+    // Buscar assinaturas ativas
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
@@ -86,6 +130,7 @@ serve(async (req) => {
       
       const priceId = subscription.items.data[0].price.id;
       
+      // Mapear Price IDs para tiers
       switch (priceId) {
         case "price_1RY6qLPXpiLbJ63CnoCv4uFr":
           subscriptionTier = "Autônomo";
@@ -101,6 +146,7 @@ serve(async (req) => {
       }
     }
 
+    // Atualizar dados no banco
     await supabaseService.from("subscribers").upsert({
       user_id: user.id,
       email: user.email,
@@ -121,11 +167,20 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    // Log detalhado do erro para depuração
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorStack = error instanceof Error ? error.stack : 'Stack não disponível';
+    
+    // Log apenas no servidor (não expor ao cliente)
+    console.error('Erro na Edge Function check-subscription:', {
+      message: errorMessage,
+      stack: errorStack,
+      timestamp: new Date().toISOString()
+    });
     
     return new Response(
       JSON.stringify({ 
-        error: errorMessage,
+        error: "Erro interno do servidor",
         subscribed: false 
       }),
       {
