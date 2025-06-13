@@ -1,3 +1,4 @@
+
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabase } from '@/hooks/useSupabase';
-import { User, Calendar, MapPin, Bell, Shield, CreditCard, Save, Edit } from 'lucide-react';
+import { User, Calendar, Bell, Shield, CreditCard, Save, Edit } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -31,7 +32,6 @@ const Configuracoes = () => {
     address: '',
   });
 
-  // Carregar dados do perfil
   useEffect(() => {
     const loadProfile = async () => {
       if (user?.id) {
@@ -67,7 +67,6 @@ const Configuracoes = () => {
         toast.error('Erro ao atualizar perfil. Tente novamente.');
       }
     } catch (error) {
-      console.error('Erro ao salvar perfil:', error);
       toast.error('Erro inesperado ao atualizar perfil.');
     } finally {
       setLoading(false);
@@ -135,7 +134,7 @@ const Configuracoes = () => {
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900">
+                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
                     {profileData.full_name || 'Não informado'}
                   </p>
                 )}
@@ -154,7 +153,7 @@ const Configuracoes = () => {
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900">
+                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
                     {profileData.phone || 'Não informado'}
                   </p>
                 )}
@@ -173,7 +172,7 @@ const Configuracoes = () => {
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900">
+                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
                     {profileData.business_type || 'Não informado'}
                   </p>
                 )}
@@ -192,7 +191,7 @@ const Configuracoes = () => {
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900">
+                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
                     {profileData.business_name || 'Não informado'}
                   </p>
                 )}
@@ -211,7 +210,7 @@ const Configuracoes = () => {
                     className="mt-1"
                   />
                 ) : (
-                  <p className="mt-1 text-sm sm:text-lg text-gray-900">
+                  <p className="mt-1 text-sm sm:text-lg text-gray-900 p-2 bg-gray-50 rounded border">
                     {profileData.address || 'Não informado'}
                   </p>
                 )}
@@ -256,37 +255,6 @@ const Configuracoes = () => {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Business Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Configurações do Estabelecimento
-            </CardTitle>
-            <CardDescription>Informações sobre seu salão ou negócio</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Nome do Negócio</label>
-                <p className="mt-1 text-gray-600">{user?.user_metadata?.business_name || 'Não configurado'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Tipo de Negócio</label>
-                <p className="mt-1 text-gray-600">{user?.user_metadata?.business_type || 'Não configurado'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Telefone</label>
-                <p className="mt-1 text-gray-600">{user?.user_metadata?.phone || 'Não configurado'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Endereço</label>
-                <p className="mt-1 text-gray-600">Não configurado</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 

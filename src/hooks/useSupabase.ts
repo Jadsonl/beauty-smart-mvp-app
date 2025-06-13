@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 // Tipos para as novas tabelas
 export interface Cliente {
@@ -412,6 +413,36 @@ export const useSupabase = () => {
     }
   }, [user]);
 
+  const updateTransacao = useCallback(async (id: string, transacaoData: Partial<Transacao>): Promise<boolean> => {
+    if (!user?.id) {
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          tipo: transacaoData.tipo,
+          descricao: transacaoData.descricao,
+          valor: transacaoData.valor,
+          data: transacaoData.data
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   // AGENDAMENTOS - usando useCallback
   const getAgendamentos = useCallback(async (): Promise<Agendamento[]> => {
     if (!user?.id) {
@@ -781,6 +812,7 @@ export const useSupabase = () => {
     // Transações
     getTransacoes,
     addTransacao,
+    updateTransacao,
     // Agendamentos
     getAgendamentos,
     addAgendamento,

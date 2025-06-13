@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSupabase, type Transacao } from '@/hooks/useSupabase';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, Calendar, Plus, DollarSign, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, Plus, DollarSign, Edit3, ChevronLeft, ChevronRight, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -33,7 +33,6 @@ const Financeiro = () => {
   }, []);
 
   useEffect(() => {
-    // Filtrar transações por mês/ano selecionado
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
     
@@ -50,7 +49,6 @@ const Financeiro = () => {
       const transacoesData = await getTransacoes();
       setTransacoes(transacoesData);
     } catch (error) {
-      console.error('Erro ao carregar transações:', error);
       toast.error('Erro ao carregar transações');
     }
   };
@@ -62,7 +60,6 @@ const Financeiro = () => {
     }
 
     try {
-      console.log('Financeiro: Adicionando transação:', newTransaction);
       const success = await addTransacao(newTransaction);
       if (success) {
         toast.success('Transação adicionada com sucesso!');
@@ -78,7 +75,6 @@ const Financeiro = () => {
         toast.error('Erro ao adicionar transação');
       }
     } catch (error) {
-      console.error('Erro ao adicionar transação:', error);
       toast.error('Erro ao adicionar transação');
     }
   };
@@ -90,7 +86,6 @@ const Financeiro = () => {
     }
 
     try {
-      console.log('Financeiro: Editando transação:', editingTransaction);
       const success = await updateTransacao(editingTransaction.id, {
         tipo: editingTransaction.tipo,
         descricao: editingTransaction.descricao,
@@ -107,7 +102,6 @@ const Financeiro = () => {
         toast.error('Erro ao atualizar transação');
       }
     } catch (error) {
-      console.error('Erro ao atualizar transação:', error);
       toast.error('Erro ao atualizar transação');
     }
   };
@@ -127,6 +121,57 @@ const Financeiro = () => {
       }
       return newDate;
     });
+  };
+
+  const exportToCSV = () => {
+    const csv = [
+      ['Data', 'Tipo', 'Descrição', 'Valor'],
+      ...filteredTransacoes.map(t => [
+        format(new Date(t.data), 'dd/MM/yyyy'),
+        t.tipo,
+        t.descricao,
+        t.valor.toFixed(2)
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = async () => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
+    
+    doc.text('Relatório Financeiro', 20, 20);
+    doc.text(`Período: ${format(currentDate, 'MMMM yyyy', { locale: ptBR })}`, 20, 30);
+    
+    let y = 50;
+    filteredTransacoes.forEach(t => {
+      doc.text(`${format(new Date(t.data), 'dd/MM/yyyy')} - ${t.tipo} - ${t.descricao} - R$ ${t.valor.toFixed(2)}`, 20, y);
+      y += 10;
+    });
+
+    doc.save(`relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.pdf`);
+  };
+
+  const exportToExcel = async () => {
+    const XLSX = await import('xlsx');
+    const ws = XLSX.utils.json_to_sheet(
+      filteredTransacoes.map(t => ({
+        Data: format(new Date(t.data), 'dd/MM/yyyy'),
+        Tipo: t.tipo,
+        Descrição: t.descricao,
+        Valor: t.valor
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transações');
+    XLSX.writeFile(wb, `relatorio_financeiro_${format(currentDate, 'MMMM_yyyy', { locale: ptBR })}.xlsx`);
   };
 
   // Calculate financial metrics para o mês atual
@@ -155,84 +200,117 @@ const Financeiro = () => {
             <p className="text-gray-600 mt-1 text-sm sm:text-base">Controle financeiro e relatórios do seu negócio</p>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Transação
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Transação
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md mx-4 sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Nova Transação</DialogTitle>
+                  <DialogDescription>
+                    Registre uma nova receita ou despesa.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="tipo">Tipo *</Label>
+                    <Select value={newTransaction.tipo} onValueChange={(value: 'receita' | 'despesa') => 
+                      setNewTransaction({...newTransaction, tipo: value})
+                    }>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="receita">Receita</SelectItem>
+                        <SelectItem value="despesa">Despesa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="descricao">Descrição *</Label>
+                    <Input
+                      id="descricao"
+                      value={newTransaction.descricao}
+                      onChange={(e) => setNewTransaction({...newTransaction, descricao: e.target.value})}
+                      placeholder="Ex: Corte de cabelo - Cliente João"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="valor">Valor (R$) *</Label>
+                      <Input
+                        id="valor"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newTransaction.valor}
+                        onChange={(e) => setNewTransaction({...newTransaction, valor: parseFloat(e.target.value) || 0})}
+                        placeholder="0,00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="data">Data *</Label>
+                      <Input
+                        id="data"
+                        type="date"
+                        value={newTransaction.data}
+                        onChange={(e) => setNewTransaction({...newTransaction, data: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2 pt-4">
+                    <Button 
+                      onClick={handleAddTransaction} 
+                      className="bg-green-600 hover:bg-green-700 flex-1"
+                    >
+                      Adicionar Transação
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            {/* Export Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="flex-1 sm:flex-none"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                CSV
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md mx-4 sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Adicionar Nova Transação</DialogTitle>
-                <DialogDescription>
-                  Registre uma nova receita ou despesa.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="tipo">Tipo *</Label>
-                  <Select value={newTransaction.tipo} onValueChange={(value: 'receita' | 'despesa') => 
-                    setNewTransaction({...newTransaction, tipo: value})
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="receita">Receita</SelectItem>
-                      <SelectItem value="despesa">Despesa</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="descricao">Descrição *</Label>
-                  <Input
-                    id="descricao"
-                    value={newTransaction.descricao}
-                    onChange={(e) => setNewTransaction({...newTransaction, descricao: e.target.value})}
-                    placeholder="Ex: Corte de cabelo - Cliente João"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="valor">Valor (R$) *</Label>
-                    <Input
-                      id="valor"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={newTransaction.valor}
-                      onChange={(e) => setNewTransaction({...newTransaction, valor: parseFloat(e.target.value) || 0})}
-                      placeholder="0,00"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="data">Data *</Label>
-                    <Input
-                      id="data"
-                      type="date"
-                      value={newTransaction.data}
-                      onChange={(e) => setNewTransaction({...newTransaction, data: e.target.value})}
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-2 pt-4">
-                  <Button 
-                    onClick={handleAddTransaction} 
-                    className="bg-green-600 hover:bg-green-700 flex-1"
-                  >
-                    Adicionar Transação
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToPDF}
+                className="flex-1 sm:flex-none"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                PDF
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToExcel}
+                className="flex-1 sm:flex-none"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Excel
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Month Navigation */}
