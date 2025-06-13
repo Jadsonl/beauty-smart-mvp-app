@@ -75,6 +75,7 @@ export interface Profile {
   phone?: string;
   business_type?: string;
   business_name?: string;
+  address?: string;
   created_at?: string;
 }
 

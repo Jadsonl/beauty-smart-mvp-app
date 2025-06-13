@@ -14,8 +14,11 @@ serve(async (req) => {
   }
 
   try {
+    console.log("check-subscription: Iniciando função");
+    
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
+      console.error("check-subscription: STRIPE_SECRET_KEY não configurada");
       throw new Error("STRIPE_SECRET_KEY não configurada");
     }
 
@@ -34,26 +37,34 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("check-subscription: Token de autorização não fornecido");
       throw new Error("Token de autorização não fornecido");
     }
 
     const token = authHeader.replace("Bearer ", "");
+    console.log("check-subscription: Verificando usuário");
+    
     const { data, error } = await supabaseAuth.auth.getUser(token);
     
     if (error || !data.user) {
+      console.error("check-subscription: Erro de autenticação:", error?.message);
       throw new Error("Usuário não autenticado");
     }
 
     const user = data.user;
+    console.log("check-subscription: Usuário autenticado:", user.email);
+    
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
     // Buscar cliente no Stripe
+    console.log("check-subscription: Buscando cliente no Stripe");
     const customers = await stripe.customers.list({
       email: user.email!,
       limit: 1
     });
 
     if (customers.data.length === 0) {
+      console.log("check-subscription: Nenhum cliente encontrado no Stripe");
       // Atualizar status no Supabase - sem assinatura
       await supabaseService.from("subscribers").upsert({
         user_id: user.id,
@@ -71,6 +82,7 @@ serve(async (req) => {
     }
 
     const customerId = customers.data[0].id;
+    console.log("check-subscription: Cliente encontrado:", customerId);
 
     // Buscar assinaturas ativas
     const subscriptions = await stripe.subscriptions.list({
@@ -103,6 +115,7 @@ serve(async (req) => {
         default:
           subscriptionTier = "Desconhecido";
       }
+      console.log("check-subscription: Assinatura ativa encontrada:", subscriptionTier);
     }
 
     // Atualizar status no Supabase
@@ -116,6 +129,8 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
 
+    console.log("check-subscription: Sucesso", { subscribed: hasActiveSub, tier: subscriptionTier });
+
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
       subscription_tier: subscriptionTier,
@@ -126,9 +141,14 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Erro ao verificar assinatura:", error);
+    console.error("check-subscription: Erro capturado:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        subscribed: false 
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

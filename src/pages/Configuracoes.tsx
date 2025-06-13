@@ -15,6 +15,7 @@ interface ProfileData {
   phone?: string;
   business_type?: string;
   business_name?: string;
+  address?: string;
 }
 
 const Configuracoes = () => {
@@ -27,6 +28,7 @@ const Configuracoes = () => {
     phone: '',
     business_type: '',
     business_name: '',
+    address: '',
   });
 
   // Carregar dados do perfil
@@ -40,6 +42,7 @@ const Configuracoes = () => {
             phone: profile.phone || '',
             business_type: profile.business_type || '',
             business_name: profile.business_name || '',
+            address: profile.address || '',
           });
         }
       }
@@ -176,7 +179,7 @@ const Configuracoes = () => {
                 )}
               </div>
 
-              <div className="sm:col-span-2">
+              <div>
                 <Label htmlFor="business_name" className="text-xs sm:text-sm font-medium text-gray-700">
                   Nome do Negócio
                 </Label>
@@ -191,6 +194,25 @@ const Configuracoes = () => {
                 ) : (
                   <p className="mt-1 text-sm sm:text-lg text-gray-900">
                     {profileData.business_name || 'Não informado'}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="address" className="text-xs sm:text-sm font-medium text-gray-700">
+                  Endereço
+                </Label>
+                {isEditing ? (
+                  <Input
+                    id="address"
+                    value={profileData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Rua, Número, Bairro, Cidade"
+                    className="mt-1"
+                  />
+                ) : (
+                  <p className="mt-1 text-sm sm:text-lg text-gray-900">
+                    {profileData.address || 'Não informado'}
                   </p>
                 )}
               </div>
