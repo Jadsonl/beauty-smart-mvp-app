@@ -146,7 +146,7 @@ const Financeiro = () => {
 
   const exportToPDF = async () => {
     try {
-      const { default: jsPDF } = await import('jspdf');
+      const jsPDF = (await import('jspdf')).default;
       const doc = new jsPDF();
       
       doc.text('Relatório Financeiro', 20, 20);
