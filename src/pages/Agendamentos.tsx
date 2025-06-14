@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,11 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X, CalendarIcon } from 'lucide-react';
+// --- Only import CalendarIcon from lucide-react, NOT Calendar!! ---
+import { CalendarIcon, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import HistoricoAgendamentos from '@/components/HistoricoAgendamentos';
+// --- Import Calendar from your shadcn/ui component library ---
+import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { cn } from "@/lib/utils";
