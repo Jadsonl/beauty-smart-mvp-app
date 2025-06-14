@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
-import { Calendar, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import HistoricoAgendamentos from '@/components/HistoricoAgendamentos';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { cn } from "@/lib/utils";
 
 const Agendamentos = () => {
   const { 
@@ -305,6 +307,7 @@ const Agendamentos = () => {
                                 locale={ptBR}
                                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 initialFocus
+                                className={cn("p-3 pointer-events-auto")}
                               />
                             </PopoverContent>
                           </Popover>
