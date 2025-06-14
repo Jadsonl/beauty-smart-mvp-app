@@ -8,7 +8,7 @@ import { Calendar, Clock, User, Phone, Mail, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface Agendamento {
+interface AgendamentoHistorico {
   id: string;
   client_name: string;
   client_email: string;
@@ -16,13 +16,13 @@ interface Agendamento {
   service: string;
   date: string;
   time: string;
-  status: string;
+  status?: string;
   notes?: string;
 }
 
 const HistoricoAgendamentos = () => {
   const { getAgendamentosByMonth, loading } = useSupabase();
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [agendamentos, setAgendamentos] = useState<AgendamentoHistorico[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -50,7 +50,10 @@ const HistoricoAgendamentos = () => {
   const loadAgendamentos = async () => {
     try {
       const data = await getAgendamentosByMonth(selectedMonth, selectedYear);
-      setAgendamentos(data);
+      setAgendamentos(data.map(item => ({
+        ...item,
+        status: item.status || 'scheduled'
+      })));
     } catch (error) {
       console.error('Erro ao carregar agendamentos:', error);
     }

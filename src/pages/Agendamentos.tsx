@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
+import { useAuth } from '@/hooks/useAuth';
+import { Calendar, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Edit, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
-import { toast } from 'sonner';
 import HistoricoAgendamentos from '@/components/HistoricoAgendamentos';
 
 const Agendamentos = () => {
@@ -195,13 +195,13 @@ const Agendamentos = () => {
   return (
     <Layout>
       <div className="space-y-6 p-4 sm:p-6">
-        <Tabs defaultValue="current" className="w-full">
+        <Tabs defaultValue="agendamentos" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="current">Agendamentos Atuais</TabsTrigger>
-            <TabsTrigger value="history">Histórico</TabsTrigger>
+            <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
+            <TabsTrigger value="historico">Histórico</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="current">
+
+          <TabsContent value="agendamentos">
             <div className="space-y-4 sm:space-y-8">
               {/* Header - Responsivo */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -457,8 +457,8 @@ const Agendamentos = () => {
               </Card>
             </div>
           </TabsContent>
-          
-          <TabsContent value="history">
+
+          <TabsContent value="historico">
             <HistoricoAgendamentos />
           </TabsContent>
         </Tabs>
