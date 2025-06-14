@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   const validateEmail = (email: string) => {
@@ -23,34 +23,35 @@ const ForgotPassword = () => {
     e.preventDefault();
     
     if (!email) {
-      toast({
-        title: "Erro",
-        description: "Por favor, insira seu e-mail.",
-        variant: "destructive"
-      });
+      toast.error('Por favor, insira seu e-mail.');
       return;
     }
     
     if (!validateEmail(email)) {
-      toast({
-        title: "Erro",
-        description: "Por favor, insira um e-mail válido.",
-        variant: "destructive"
-      });
+      toast.error('Por favor, insira um e-mail válido.');
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setEmailSent(true);
-      toast({
-        title: "E-mail enviado!",
-        description: "As instruções de recuperação de senha foram enviadas para o seu e-mail.",
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-    }, 2000);
+
+      if (error) {
+        console.error('Erro ao enviar e-mail de recuperação:', error);
+        toast.error('Erro ao enviar e-mail de recuperação. Verifique o endereço e tente novamente.');
+      } else {
+        setEmailSent(true);
+        toast.success('E-mail de recuperação enviado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      toast.error('Erro inesperado. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (emailSent) {

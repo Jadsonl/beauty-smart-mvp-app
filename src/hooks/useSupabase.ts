@@ -774,16 +774,44 @@ export const useSupabase = () => {
     console.log('updateProfile: Atualizando perfil para user_id:', user.id, 'dados:', profileData);
     
     try {
-      const { error } = await supabase
+      // Primeiro, verificar se o perfil já existe
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email!,
-          ...profileData,
-        });
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      let result;
       
-      if (error) {
-        console.error('updateProfile: Erro ao atualizar perfil:', error);
+      if (existingProfile) {
+        // Atualizar perfil existente
+        result = await supabase
+          .from('profiles')
+          .update({
+            full_name: profileData.full_name,
+            phone: profileData.phone,
+            business_name: profileData.business_name,
+            business_type: profileData.business_type,
+            address: profileData.address,
+          })
+          .eq('id', user.id);
+      } else {
+        // Criar novo perfil
+        result = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email!,
+            full_name: profileData.full_name,
+            phone: profileData.phone,
+            business_name: profileData.business_name,
+            business_type: profileData.business_type,
+            address: profileData.address,
+          });
+      }
+      
+      if (result.error) {
+        console.error('updateProfile: Erro ao atualizar perfil:', result.error);
         return false;
       }
       
@@ -792,6 +820,42 @@ export const useSupabase = () => {
     } catch (error) {
       console.error('updateProfile: Erro inesperado:', error);
       return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Função para buscar agendamentos por mês/ano
+  const getAgendamentosByMonth = useCallback(async (month: number, year: number): Promise<Agendamento[]> => {
+    if (!user?.id) {
+      console.warn('getAgendamentosByMonth: Usuário não autenticado');
+      return [];
+    }
+    
+    setLoading(true);
+    
+    try {
+      const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0]; // último dia do mês
+      
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: false });
+      
+      if (error) {
+        console.error('getAgendamentosByMonth: Erro ao buscar agendamentos:', error);
+        return [];
+      }
+      
+      console.log('getAgendamentosByMonth: Agendamentos encontrados:', data);
+      return data || [];
+    } catch (error) {
+      console.error('getAgendamentosByMonth: Erro inesperado:', error);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -827,5 +891,7 @@ export const useSupabase = () => {
     // Profile
     getProfile,
     updateProfile,
+    // Nova função para agendamentos por mês
+    getAgendamentosByMonth,
   };
 };

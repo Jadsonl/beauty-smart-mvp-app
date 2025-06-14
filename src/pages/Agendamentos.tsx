@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { CalendarIcon, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
 import { toast } from 'sonner';
+import HistoricoAgendamentos from '@/components/HistoricoAgendamentos';
 
 const Agendamentos = () => {
   const { 
@@ -194,259 +194,274 @@ const Agendamentos = () => {
 
   return (
     <Layout>
-      <div className="space-y-4 sm:space-y-8">
-        {/* Header - Responsivo */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Agendamentos</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie todos os agendamentos do seu estabelecimento</p>
-          </div>
+      <div className="space-y-6 p-4 sm:p-6">
+        <Tabs defaultValue="current" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="current">Agendamentos Atuais</TabsTrigger>
+            <TabsTrigger value="history">Histórico</TabsTrigger>
+          </TabsList>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-                onClick={() => handleOpenDialog()}
-              >
-                + Novo Agendamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-lg sm:text-xl">
-                  {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
-                </DialogTitle>
-                <DialogDescription className="text-sm">
-                  {editingAgendamento 
-                    ? 'Edite as informações do agendamento.' 
-                    : 'Preencha os dados para criar um novo agendamento.'
-                  }
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cliente">Selecione o Cliente</Label>
-                  {clientes.length === 0 ? (
-                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                      <p className="text-sm text-yellow-800">
-                        Nenhum cliente cadastrado. Cadastre um cliente primeiro.
-                      </p>
-                    </div>
-                  ) : (
-                    <Select 
-                      value={formData.clienteId} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, clienteId: value }))}
+          <TabsContent value="current">
+            <div className="space-y-4 sm:space-y-8">
+              {/* Header - Responsivo */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Agendamentos</h1>
+                  <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie todos os agendamentos do seu estabelecimento</p>
+                </div>
+                
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
+                      onClick={() => handleOpenDialog()}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Escolha um cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clientes.map((cliente) => (
-                          <SelectItem key={cliente.id} value={cliente.id}>
-                            {cliente.nome} - {cliente.telefone}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="servico">Serviço</Label>
-                  <Input
-                    id="servico"
-                    placeholder="Ex: Corte + Barba"
-                    value={formData.servico}
-                    onChange={(e) => setFormData(prev => ({ ...prev, servico: e.target.value }))}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Data</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !formData.data && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.data ? (
-                            format(new Date(formData.data), "dd/MM/yyyy", { locale: ptBR })
-                          ) : (
-                            <span>Selecione a data</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={formData.data ? new Date(formData.data) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                data: format(date, 'yyyy-MM-dd') 
-                              }));
-                            }
-                          }}
-                          locale={ptBR}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="horario">Horário</Label>
-                    <Select 
-                      value={formData.horario} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, horario: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Horário" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timeSlots.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="observacoes">Observações (Opcional)</Label>
-                  <Input
-                    id="observacoes"
-                    placeholder="Observações adicionais"
-                    value={formData.observacoes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                  />
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={handleCloseDialog}
-                    className="w-full sm:w-auto"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-                    disabled={clientes.length === 0 || !formData.clienteId || loading}
-                  >
-                    {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Agendamentos List - Responsivo */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Lista de Agendamentos</CardTitle>
-            <CardDescription className="text-sm">
-              {agendamentos.length === 0 
-                ? 'Nenhum agendamento cadastrado ainda.' 
-                : `${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''} cadastrado${agendamentos.length > 1 ? 's' : ''}`
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {agendamentos.length === 0 ? (
-              <div className="text-center py-8 sm:py-12">
-                <span className="text-4xl sm:text-6xl mb-4 block">📅</span>
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
-                  Nenhum agendamento cadastrado
-                </h3>
-                <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
-                  Comece criando seu primeiro agendamento!
-                </p>
-                <Button 
-                  className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-                  onClick={() => handleOpenDialog()}
-                >
-                  + Criar Primeiro Agendamento
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {sortedAgendamentos.map((agendamento) => (
-                  <div 
-                    key={agendamento.id} 
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow gap-4"
-                  >
-                    <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-                        <h3 className="font-semibold text-base sm:text-lg">{agendamento.client_name}</h3>
-                        <span className={cn(
-                          "px-2 py-1 text-xs font-medium rounded-full w-fit",
-                          agendamento.status === 'scheduled' && "bg-blue-100 text-blue-800",
-                          agendamento.status === 'completed' && "bg-green-100 text-green-800",
-                          agendamento.status === 'cancelled' && "bg-red-100 text-red-800"
-                        )}>
-                          {agendamento.status === 'scheduled' ? 'Agendado' : 
-                           agendamento.status === 'completed' ? 'Concluído' : 'Cancelado'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600">
-                        <div>
-                          <span className="font-medium">Serviço:</span>
-                          <p className="truncate">{agendamento.service}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Data:</span>
-                          <p>{format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                        </div>
-                        <div>
-                          <span className="font-medium">Horário:</span>
-                          <p>{agendamento.time}</p>
-                        </div>
-                        {agendamento.notes && (
-                          <div className="sm:col-span-2 lg:col-span-1">
-                            <span className="font-medium">Obs:</span>
-                            <p className="truncate">{agendamento.notes}</p>
+                      + Novo Agendamento
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg sm:text-xl">
+                        {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
+                      </DialogTitle>
+                      <DialogDescription className="text-sm">
+                        {editingAgendamento 
+                          ? 'Edite as informações do agendamento.' 
+                          : 'Preencha os dados para criar um novo agendamento.'
+                        }
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cliente">Selecione o Cliente</Label>
+                        {clientes.length === 0 ? (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-800">
+                              Nenhum cliente cadastrado. Cadastre um cliente primeiro.
+                            </p>
                           </div>
+                        ) : (
+                          <Select 
+                            value={formData.clienteId} 
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, clienteId: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Escolha um cliente" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {clientes.map((cliente) => (
+                                <SelectItem key={cliente.id} value={cliente.id}>
+                                  {cliente.nome} - {cliente.telefone}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         )}
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 self-end sm:self-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenDialog(agendamento)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(agendamento)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="servico">Serviço</Label>
+                        <Input
+                          id="servico"
+                          placeholder="Ex: Corte + Barba"
+                          value={formData.servico}
+                          onChange={(e) => setFormData(prev => ({ ...prev, servico: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Data</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !formData.data && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formData.data ? (
+                                  format(new Date(formData.data), "dd/MM/yyyy", { locale: ptBR })
+                                ) : (
+                                  <span>Selecione a data</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={formData.data ? new Date(formData.data) : undefined}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    setFormData(prev => ({ 
+                                      ...prev, 
+                                      data: format(date, 'yyyy-MM-dd') 
+                                    }));
+                                  }
+                                }}
+                                locale={ptBR}
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="horario">Horário</Label>
+                          <Select 
+                            value={formData.horario} 
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, horario: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Horário" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {timeSlots.map((time) => (
+                                <SelectItem key={time} value={time}>
+                                  {time}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="observacoes">Observações (Opcional)</Label>
+                        <Input
+                          id="observacoes"
+                          placeholder="Observações adicionais"
+                          value={formData.observacoes}
+                          onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={handleCloseDialog}
+                          className="w-full sm:w-auto"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
+                          disabled={clientes.length === 0 || !formData.clienteId || loading}
+                        >
+                          {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              {/* Agendamentos List - Responsivo */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl">Lista de Agendamentos</CardTitle>
+                  <CardDescription className="text-sm">
+                    {agendamentos.length === 0 
+                      ? 'Nenhum agendamento cadastrado ainda.' 
+                      : `${agendamentos.length} agendamento${agendamentos.length > 1 ? 's' : ''} cadastrado${agendamentos.length > 1 ? 's' : ''}`
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {agendamentos.length === 0 ? (
+                    <div className="text-center py-8 sm:py-12">
+                      <span className="text-4xl sm:text-6xl mb-4 block">📅</span>
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
+                        Nenhum agendamento cadastrado
+                      </h3>
+                      <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
+                        Comece criando seu primeiro agendamento!
+                      </p>
+                      <Button 
+                        className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
+                        onClick={() => handleOpenDialog()}
+                      >
+                        + Criar Primeiro Agendamento
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {sortedAgendamentos.map((agendamento) => (
+                        <div 
+                          key={agendamento.id} 
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow gap-4"
+                        >
+                          <div className="flex-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                              <h3 className="font-semibold text-base sm:text-lg">{agendamento.client_name}</h3>
+                              <span className={cn(
+                                "px-2 py-1 text-xs font-medium rounded-full w-fit",
+                                agendamento.status === 'scheduled' && "bg-blue-100 text-blue-800",
+                                agendamento.status === 'completed' && "bg-green-100 text-green-800",
+                                agendamento.status === 'cancelled' && "bg-red-100 text-red-800"
+                              )}>
+                                {agendamento.status === 'scheduled' ? 'Agendado' : 
+                                 agendamento.status === 'completed' ? 'Concluído' : 'Cancelado'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600">
+                              <div>
+                                <span className="font-medium">Serviço:</span>
+                                <p className="truncate">{agendamento.service}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Data:</span>
+                                <p>{format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium">Horário:</span>
+                                <p>{agendamento.time}</p>
+                              </div>
+                              {agendamento.notes && (
+                                <div className="sm:col-span-2 lg:col-span-1">
+                                  <span className="font-medium">Obs:</span>
+                                  <p className="truncate">{agendamento.notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2 self-end sm:self-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenDialog(agendamento)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(agendamento)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <HistoricoAgendamentos />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

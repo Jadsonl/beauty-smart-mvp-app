@@ -56,16 +56,23 @@ const Configuracoes = () => {
       return;
     }
 
+    // Validação básica
+    if (!profile.full_name.trim()) {
+      toast.error('Nome completo é obrigatório');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const success = await updateProfile(profile);
       if (success) {
         toast.success('Perfil atualizado com sucesso!');
       } else {
-        toast.error('Erro ao atualizar perfil');
+        toast.error('Erro ao atualizar perfil. Verifique os dados e tente novamente.');
       }
     } catch (error) {
-      toast.error('Erro ao salvar alterações');
+      console.error('Erro ao salvar alterações:', error);
+      toast.error('Erro inesperado ao salvar alterações');
     } finally {
       setIsSaving(false);
     }
@@ -93,7 +100,7 @@ const Configuracoes = () => {
   return (
     <Layout>
       <div className="space-y-6 p-4 sm:p-6">
-        {/* Perfil Pessoal */}
+        {/* Informações Pessoais */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -104,12 +111,13 @@ const Configuracoes = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="full_name">Nome Completo</Label>
+                <Label htmlFor="full_name">Nome Completo *</Label>
                 <Input
                   id="full_name"
                   value={profile.full_name}
                   onChange={(e) => handleInputChange('full_name', e.target.value)}
                   placeholder="Seu nome completo"
+                  required
                 />
               </div>
               <div>
