@@ -33,7 +33,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     descricao: '',
     valor: '',
     data: new Date(),
-    professional_id: 'none'
+    professional_id: 'despesa-nenhum-profissional'
   });
 
   // Filtrar profissionais válidos para evitar valores vazios
@@ -49,7 +49,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
       data: format(formData.data, 'yyyy-MM-dd'),
-      professional_id: formData.professional_id === 'none' ? null : formData.professional_id,
+      professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       agendamento_id: null
     };
 
@@ -61,7 +61,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
         descricao: '',
         valor: '',
         data: new Date(),
-        professional_id: 'none'
+        professional_id: 'despesa-nenhum-profissional'
       });
       onClose();
     }
@@ -74,7 +74,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       descricao: '',
       valor: '',
       data: new Date(),
-      professional_id: 'none'
+      professional_id: 'despesa-nenhum-profissional'
     });
     onClose();
   };
@@ -165,7 +165,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
                 <SelectValue placeholder="Selecione um profissional (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Nenhum profissional / Despesa</SelectItem>
+                <SelectItem value="despesa-nenhum-profissional">Despesa / Nenhum Profissional</SelectItem>
                 {validProfissionais.map((prof) => (
                   <SelectItem key={prof.id} value={prof.id}>
                     {prof.name}

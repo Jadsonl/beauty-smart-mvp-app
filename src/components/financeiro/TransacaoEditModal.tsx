@@ -35,7 +35,7 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
     descricao: '',
     valor: '',
     data: new Date(),
-    professional_id: 'none' // Default para "none" ao invés de string vazia
+    professional_id: 'despesa-nenhum-profissional'
   });
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
         descricao: transacao.descricao,
         valor: transacao.valor.toString(),
         data: new Date(transacao.data),
-        professional_id: transacao.professional_id || 'none' // Se for null/undefined, usar 'none'
+        professional_id: transacao.professional_id || 'despesa-nenhum-profissional'
       });
     }
   }, [transacao]);
@@ -64,7 +64,7 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
       data: format(formData.data, 'yyyy-MM-dd'),
-      professional_id: formData.professional_id === 'none' ? null : formData.professional_id
+      professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id
     };
 
     const success = await onSave(transacao.id, updatedData);
@@ -165,7 +165,7 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
                 <SelectValue placeholder="Selecione um profissional (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Nenhum profissional / Despesa</SelectItem>
+                <SelectItem value="despesa-nenhum-profissional">Despesa / Nenhum Profissional</SelectItem>
                 {validProfissionais.map((prof) => (
                   <SelectItem key={prof.id} value={prof.id}>
                     {prof.name}
