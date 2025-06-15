@@ -23,12 +23,18 @@ export const useFinanceiro = () => {
       console.log('useFinanceiro: Carregando profissionais...');
       try {
         const profissionaisData = await getProfissionais();
+        // Filtrar rigorosamente para evitar valores vazios que quebram o Select
         const validProfissionais = (profissionaisData || []).filter(profissional => 
-          profissional && profissional.id && profissional.name && 
-          profissional.id.trim() !== '' && profissional.name.trim() !== ''
+          profissional && 
+          profissional.id && 
+          profissional.id.trim() !== '' && 
+          profissional.name && 
+          profissional.name.trim() !== '' &&
+          typeof profissional.id === 'string' &&
+          typeof profissional.name === 'string'
         );
         setProfissionais(validProfissionais);
-        console.log('useFinanceiro: Profissionais carregados:', validProfissionais.length);
+        console.log('useFinanceiro: Profissionais válidos carregados:', validProfissionais.length);
       } catch (error) {
         console.error('useFinanceiro: Erro ao carregar profissionais:', error);
         toast.error('Erro ao carregar profissionais');

@@ -35,7 +35,7 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
     descricao: '',
     valor: '',
     data: new Date(),
-    professional_id: ''
+    professional_id: 'none' // Default para "none" ao invés de string vazia
   });
 
   useEffect(() => {
@@ -45,10 +45,15 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
         descricao: transacao.descricao,
         valor: transacao.valor.toString(),
         data: new Date(transacao.data),
-        professional_id: transacao.professional_id || ''
+        professional_id: transacao.professional_id || 'none' // Se for null/undefined, usar 'none'
       });
     }
   }, [transacao]);
+
+  // Filtrar profissionais válidos para evitar valores vazios
+  const validProfissionais = profissionais.filter(prof => 
+    prof && prof.id && prof.id.trim() !== '' && prof.name && prof.name.trim() !== ''
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +64,7 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
       data: format(formData.data, 'yyyy-MM-dd'),
-      professional_id: formData.professional_id || null
+      professional_id: formData.professional_id === 'none' ? null : formData.professional_id
     };
 
     const success = await onSave(transacao.id, updatedData);
@@ -160,8 +165,8 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
                 <SelectValue placeholder="Selecione um profissional (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum profissional / Despesa</SelectItem>
-                {profissionais.map((prof) => (
+                <SelectItem value="none">Nenhum profissional / Despesa</SelectItem>
+                {validProfissionais.map((prof) => (
                   <SelectItem key={prof.id} value={prof.id}>
                     {prof.name}
                   </SelectItem>
