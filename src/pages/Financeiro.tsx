@@ -133,10 +133,13 @@ const Financeiro = () => {
     const total = filteredTransacoes.reduce((sum, t) =>
       t.tipo === 'receita' ? sum + t.valor : sum - t.valor, 0);
 
-    // Adicionar linha total ao final da tabela
+    // Adicionar linha total ao final da tabela -- ALL VALUES MUST BE STRINGS!
     tableRows.push([
-      { content: 'Total', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
-      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toFixed(2)}`
+      '', // Tipo
+      '', // Descrição
+      '', // Data
+      'Total', // Profissional
+      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toFixed(2)}` // Valor
     ]);
 
     autoTable(doc, {
