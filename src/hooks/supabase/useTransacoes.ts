@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -143,10 +142,42 @@ export const useTransacoes = () => {
     }
   }, [user]);
 
+  const deleteTransacao = useCallback(async (id: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('deleteTransacao: Usuário não autenticado');
+      return false;
+    }
+
+    setLoading(true);
+    console.log('deleteTransacao: Deletando transação:', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('deleteTransacao: Erro ao deletar transação:', error);
+        return false;
+      }
+
+      console.log('deleteTransacao: Transação deletada com sucesso');
+      return true;
+    } catch (error) {
+      console.error('deleteTransacao: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   return {
     loading,
     getTransacoes,
     addTransacao,
-    updateTransacao
+    updateTransacao,
+    deleteTransacao
   };
 };

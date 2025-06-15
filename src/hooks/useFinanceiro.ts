@@ -8,6 +8,7 @@ export const useFinanceiro = () => {
     getTransacoes, 
     addTransacao, 
     updateTransacao,
+    deleteTransacao,
     getProfissionais,
     loading 
   } = useSupabase();
@@ -104,6 +105,25 @@ export const useFinanceiro = () => {
     return success;
   }, [updateTransacao, getTransacoes, selectedProfessionalId]);
 
+  const handleDeleteTransacao = useCallback(async (id: string) => {
+    console.log('useFinanceiro: Excluindo transação:', id);
+    
+    const success = await deleteTransacao(id);
+    if (success) {
+      toast.success('Transação excluída com sucesso!');
+      // Recarregar transações para manter consistência
+      const filters = {
+        professionalId: selectedProfessionalId
+      };
+      const transacoesData = await getTransacoes(filters);
+      setTransacoes(transacoesData || []);
+    } else {
+      toast.error('Erro ao excluir transação');
+    }
+    
+    return success;
+  }, [deleteTransacao, getTransacoes, selectedProfessionalId]);
+
   return {
     transacoes,
     profissionais,
@@ -113,6 +133,7 @@ export const useFinanceiro = () => {
     setServiceFilter,
     loading,
     handleAddTransacao,
-    handleUpdateTransacao
+    handleUpdateTransacao,
+    handleDeleteTransacao
   };
 };

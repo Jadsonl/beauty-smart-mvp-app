@@ -5,11 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Search, Pencil, Plus } from 'lucide-react';
+import { Search, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
 import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
 import { AdicionarTransacaoModal } from '@/components/financeiro/AdicionarTransacaoModal';
+import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { type Transacao } from '@/hooks/useSupabase';
@@ -24,13 +25,16 @@ const Financeiro = () => {
     setServiceFilter,
     loading,
     handleUpdateTransacao,
-    handleAddTransacao
+    handleAddTransacao,
+    handleDeleteTransacao
   } = useFinanceiro();
   
   const [searchFilter, setSearchFilter] = useState('');
   const [editingTransacao, setEditingTransacao] = useState<Transacao | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deleteTransacao, setDeleteTransacao] = useState<Transacao | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const totalReceitas = transacoes
     .filter(t => t.tipo === 'receita')
@@ -80,6 +84,25 @@ const Financeiro = () => {
 
   const handleSaveNewTransacao = async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => {
     return await handleAddTransacao(transacaoData);
+  };
+
+  const handleOpenDeleteModal = (transacao: Transacao) => {
+    setDeleteTransacao(transacao);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeleteTransacao(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteTransacao) {
+      const success = await handleDeleteTransacao(deleteTransacao.id);
+      if (success) {
+        handleCloseDeleteModal();
+      }
+    }
   };
 
   if (loading) {
@@ -238,6 +261,14 @@ const Financeiro = () => {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDeleteModal(transacao)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 );
@@ -262,6 +293,16 @@ const Financeiro = () => {
           onClose={handleCloseAddModal}
           profissionais={profissionais}
           onSave={handleSaveNewTransacao}
+          loading={loading}
+        />
+
+        {/* Modal de Confirmação de Exclusão */}
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          title="Excluir Lançamento Financeiro"
+          description="Tem certeza que deseja excluir este lançamento financeiro? Esta ação não pode ser desfeita."
           loading={loading}
         />
       </div>

@@ -59,10 +59,11 @@ export const useSupabase = () => {
     addProfissional: profissionaisHook.addProfissional,
     updateProfissional: profissionaisHook.updateProfissional,
     deleteProfissional: profissionaisHook.deleteProfissional,
-    // Transações - agora com suporte a filtros
+    // Transações - agora com suporte a filtros e exclusão
     getTransacoes: transacoesHook.getTransacoes,
     addTransacao: transacoesHook.addTransacao,
     updateTransacao: transacoesHook.updateTransacao,
+    deleteTransacao: transacoesHook.deleteTransacao,
     // Agendamentos
     getAgendamentos: agendamentosHook.getAgendamentos,
     addAgendamento: agendamentosHook.addAgendamento,

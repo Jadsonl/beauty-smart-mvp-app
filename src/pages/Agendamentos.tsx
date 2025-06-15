@@ -7,6 +7,7 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import HistoricoAgendamentos from '@/components/HistoricoAgendamentos';
 import { AgendamentoForm } from '@/components/agendamentos/AgendamentoForm';
 import { AgendamentosList } from '@/components/agendamentos/AgendamentosList';
+import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationModal';
 import { useAgendamentos } from '@/hooks/useAgendamentos';
 import { type Agendamento } from '@/hooks/useSupabase';
 
@@ -24,6 +25,8 @@ const Agendamentos = () => {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState<Agendamento | null>(null);
+  const [deleteAgendamento, setDeleteAgendamento] = useState<Agendamento | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleOpenDialog = (agendamento: Agendamento | null = null) => {
     setEditingAgendamento(agendamento);
@@ -33,6 +36,25 @@ const Agendamentos = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingAgendamento(null);
+  };
+
+  const handleOpenDeleteModal = (agendamento: Agendamento) => {
+    setDeleteAgendamento(agendamento);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeleteAgendamento(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteAgendamento) {
+      const success = await handleDelete(deleteAgendamento.id);
+      if (success) {
+        handleCloseDeleteModal();
+      }
+    }
   };
 
   if (loading) {
@@ -81,7 +103,7 @@ const Agendamentos = () => {
                 profissionais={profissionais}
                 onCreateNew={() => handleOpenDialog()}
                 onEdit={handleOpenDialog}
-                onDelete={handleDelete}
+                onDelete={handleOpenDeleteModal}
                 onStatusChange={handleStatusChange}
               />
             </div>
@@ -101,6 +123,16 @@ const Agendamentos = () => {
           clientes={clientes}
           servicos={servicos}
           profissionais={profissionais}
+          loading={loading}
+        />
+
+        {/* Modal de Confirmação de Exclusão */}
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          title="Excluir Agendamento"
+          description={`Tem certeza que deseja excluir o agendamento de ${deleteAgendamento?.client_name}? Esta ação não pode ser desfeita.`}
           loading={loading}
         />
       </div>
