@@ -7,7 +7,7 @@ import { useAniversariantes } from '@/hooks/useAniversariantes';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
@@ -27,7 +27,30 @@ const Dashboard = () => {
   const [inventario, setInventario] = useState<any[]>([]);
   const [notificacoesLimpas, setNotificacoesLimpas] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
+  // NOVO: Estados para notificações individuais
+  const [notificacoesIndividuais, setNotificacoesIndividuais] = useState<{
+    aniversariantesDoDia: boolean;
+    agendamentosHoje: boolean;
+    aniversariantesMes: boolean;
+    produtosComBaixoEstoque: boolean;
+  }>({
+    aniversariantesDoDia: true,
+    agendamentosHoje: true,
+    aniversariantesMes: true,
+    produtosComBaixoEstoque: true,
+  });
+
+  useEffect(() => {
+    // Resetar notificações individuais toda vez que atualizar a dashboard
+    setNotificacoesIndividuais({
+      aniversariantesDoDia: true,
+      agendamentosHoje: true,
+      aniversariantesMes: true,
+      produtosComBaixoEstoque: true,
+    });
+  }, [user?.id]);
+
   useEffect(() => {
     const fetchData = async () => {
       if (user?.id) {
@@ -102,6 +125,14 @@ const Dashboard = () => {
 
   const handleLimparNotificacoes = () => {
     setNotificacoesLimpas(true);
+  };
+
+  // NOVO: Função para remover uma notificação individual
+  const handleRemoverNotificacao = (key: keyof typeof notificacoesIndividuais) => {
+    setNotificacoesIndividuais(prev => ({
+      ...prev,
+      [key]: false,
+    }));
   };
 
   const produtosComBaixoEstoque = produtos.filter(produto => {
@@ -303,8 +334,15 @@ const Dashboard = () => {
             {!notificacoesLimpas ? (
             <div className="space-y-3">
               {/* Aniversariantes do Dia - Individual com WhatsApp */}
-              {aniversariantesDoDia.length > 0 && (
-                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+              {aniversariantesDoDia.length > 0 && notificacoesIndividuais.aniversariantesDoDia && (
+                <div className="relative p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <button
+                    onClick={() => handleRemoverNotificacao('aniversariantesDoDia')}
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-orange-200 dark:hover:bg-orange-700 transition"
+                    aria-label="Fechar"
+                  >
+                    <X className="w-4 h-4 text-orange-400" />
+                  </button>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-lg">🎉</span>
                     <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
@@ -338,16 +376,30 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {agendamentosHoje > 0 && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              {agendamentosHoje > 0 && notificacoesIndividuais.agendamentosHoje && (
+                <div className="relative p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <button
+                    onClick={() => handleRemoverNotificacao('agendamentosHoje')}
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-700 transition"
+                    aria-label="Fechar"
+                  >
+                    <X className="w-4 h-4 text-blue-400" />
+                  </button>
                   <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200">
                     📅 Você tem {agendamentosHoje} agendamento{agendamentosHoje > 1 ? 's' : ''} para hoje.
                   </p>
                 </div>
               )}
               
-              {aniversariantes.length > 0 && (
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+              {aniversariantes.length > 0 && notificacoesIndividuais.aniversariantesMes && (
+                <div className="relative p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <button
+                    onClick={() => handleRemoverNotificacao('aniversariantesMes')}
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-purple-200 dark:hover:bg-purple-700 transition"
+                    aria-label="Fechar"
+                  >
+                    <X className="w-4 h-4 text-purple-400" />
+                  </button>
                   <p className="text-xs sm:text-sm text-purple-800 dark:text-purple-200">
                     🎂 {aniversariantes.length} cliente{aniversariantes.length > 1 ? 's fazem' : ' faz'} aniversário este mês!
                   </p>
@@ -355,8 +407,15 @@ const Dashboard = () => {
               )}
               
               {/* NOVO: Estoque baixo */}
-              {produtosComBaixoEstoque.length > 0 && (
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded-lg">
+              {produtosComBaixoEstoque.length > 0 && notificacoesIndividuais.produtosComBaixoEstoque && (
+                <div className="relative p-3 bg-orange-100 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded-lg">
+                  <button
+                    onClick={() => handleRemoverNotificacao('produtosComBaixoEstoque')}
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-orange-200 dark:hover:bg-orange-700 transition"
+                    aria-label="Fechar"
+                  >
+                    <X className="w-4 h-4 text-orange-400" />
+                  </button>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">⚠️</span>
                     <span className="font-semibold text-orange-800 dark:text-orange-200 text-sm">
@@ -376,7 +435,10 @@ const Dashboard = () => {
                 </div>
               )}
               
-              {agendamentosHoje === 0 && aniversariantes.length === 0 && aniversariantesDoDia.length === 0 && produtosComBaixoEstoque.length === 0 && (
+              {(!notificacoesIndividuais.agendamentosHoje || agendamentosHoje === 0)
+                && (!notificacoesIndividuais.aniversariantesMes || aniversariantes.length === 0)
+                && (!notificacoesIndividuais.aniversariantesDoDia || aniversariantesDoDia.length === 0)
+                && (!notificacoesIndividuais.produtosComBaixoEstoque || produtosComBaixoEstoque.length === 0) && (
                 <div className="text-center py-4">
                   <span className="text-2xl sm:text-4xl mb-2 block">✨</span>
                   <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Tudo em dia! Nenhuma notificação pendente.</p>
