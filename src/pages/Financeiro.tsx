@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Search, Pencil } from 'lucide-react';
+import { Search, Pencil, Plus } from 'lucide-react';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
 import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
+import { AdicionarTransacaoModal } from '@/components/financeiro/AdicionarTransacaoModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { type Transacao } from '@/hooks/useSupabase';
@@ -23,12 +23,14 @@ const Financeiro = () => {
     serviceFilter,
     setServiceFilter,
     loading,
-    handleUpdateTransacao
+    handleUpdateTransacao,
+    handleAddTransacao
   } = useFinanceiro();
   
   const [searchFilter, setSearchFilter] = useState('');
   const [editingTransacao, setEditingTransacao] = useState<Transacao | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const totalReceitas = transacoes
     .filter(t => t.tipo === 'receita')
@@ -68,6 +70,18 @@ const Financeiro = () => {
     return await handleUpdateTransacao(transacaoId, updatedData);
   };
 
+  const handleAddLancamento = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  const handleSaveNewTransacao = async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => {
+    return await handleAddTransacao(transacaoData);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -83,6 +97,10 @@ const Financeiro = () => {
       <div className="container mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Financeiro</h1>
+          <Button onClick={handleAddLancamento} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Adicionar Lançamento
+          </Button>
         </div>
 
         {/* Resumo Financeiro */}
@@ -235,6 +253,15 @@ const Financeiro = () => {
           transacao={editingTransacao}
           profissionais={profissionais}
           onSave={handleSaveTransacao}
+          loading={loading}
+        />
+
+        {/* Modal de Adição */}
+        <AdicionarTransacaoModal
+          isOpen={isAddModalOpen}
+          onClose={handleCloseAddModal}
+          profissionais={profissionais}
+          onSave={handleSaveNewTransacao}
           loading={loading}
         />
       </div>
