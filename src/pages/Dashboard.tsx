@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [inventario, setInventario] = useState<any[]>([]);
   const [notificacoesLimpas, setNotificacoesLimpas] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [clientes, setClientes] = useState<any[]>([]); // ADICIONADO para guardar todos clientes (não só aniversariantes)
 
   // NOVO: Estados para notificações individuais
   const [notificacoesIndividuais, setNotificacoesIndividuais] = useState<{
@@ -64,6 +65,9 @@ const Dashboard = () => {
             getProdutos(),
             getInventory()
           ]);
+          
+          // Salva todos os clientes em estado separado
+          setClientes(clientesData || []);
           
           // Filtrar aniversariantes do mês atual
           const currentMonth = new Date().getMonth() + 1;
@@ -150,7 +154,7 @@ const Dashboard = () => {
   const faturamentoMes = transacoes
     .filter(t => t.tipo === 'receita' && t.data?.startsWith(thisMonth))
     .reduce((sum, t) => sum + (t.valor || 0), 0);
-  const clientesUnicos = 0; // We'll get this from clients later
+  const clientesUnicos = clientes.length; // Corrigido: agora pega direto do estado atualizado com todos clientes
   
   // Get today's appointments
   const agendamentosDeHoje = agendamentos
