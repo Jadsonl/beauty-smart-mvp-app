@@ -118,7 +118,6 @@ const Financeiro = () => {
     doc.text('Transações Financeiras', 14, 15);
     const tableColumn = ['Tipo', 'Descrição', 'Data', 'Profissional', 'Valor'];
     const tableRows = filteredTransacoes.map((t) => {
-      // Encontrar profissional
       const profissional = profissionais.find((p) => p.id === t.professional_id);
       const professionalName = t.tipo === 'receita' && profissional ? profissional.name : 'Despesa';
       return [
@@ -129,10 +128,22 @@ const Financeiro = () => {
         (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
       ];
     });
+
+    // Calcular total
+    const total = filteredTransacoes.reduce((sum, t) =>
+      t.tipo === 'receita' ? sum + t.valor : sum - t.valor, 0);
+
+    // Adicionar linha total ao final da tabela
+    tableRows.push([
+      { content: 'Total', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
+      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toFixed(2)}`
+    ]);
+
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 22,
+      styles: { fontSize: 11 }
     });
     doc.save('transacoes_Financeiro.pdf');
   };
@@ -148,6 +159,20 @@ const Financeiro = () => {
         Valor: (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
       };
     });
+
+    // Calcular total
+    const total = filteredTransacoes.reduce((sum, t) =>
+      t.tipo === 'receita' ? sum + t.valor : sum - t.valor, 0);
+
+    // Adicionar linha de total (em negrito dependendo do app do usuário)
+    data.push({
+      Tipo: '',
+      Descrição: '',
+      Data: '',
+      Profissional: 'Total',
+      Valor: (total >= 0 ? '+' : '-') + ` R$ ${Math.abs(total).toFixed(2)}`
+    });
+
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Transacoes');
