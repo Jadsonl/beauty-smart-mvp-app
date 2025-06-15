@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -103,21 +104,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
         
         <nav className="mt-4 sm:mt-6 pb-20 overflow-y-auto h-full">
-          {menuItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => handleMenuClick(item.href)}
-              className={cn(
-                "w-full text-left px-4 sm:px-6 py-2 sm:py-3 flex items-center space-x-3 transition-colors text-sm sm:text-base",
-                location.pathname === item.href
-                  ? "bg-pink-50 text-pink-600 border-r-2 border-pink-600"
-                  : "text-gray-700 hover:bg-gray-50"
-              )}
-            >
-              <span className="text-base sm:text-lg">{item.icon}</span>
-              <span className="font-medium">{item.name}</span>
-            </button>
-          ))}
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.href}
+                onClick={() => handleMenuClick(item.href)}
+                className={cn(
+                  "w-full text-left px-4 sm:px-6 py-2 sm:py-3 flex items-center space-x-3 transition-colors text-sm sm:text-base",
+                  location.pathname === item.href
+                    ? "bg-pink-50 text-pink-600 border-r-2 border-pink-600"
+                    : "text-gray-700 hover:bg-gray-50"
+                )}
+              >
+                <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="font-medium">{item.name}</span>
+              </button>
+            );
+          })}
           
           <button
             onClick={handleLogout}

@@ -604,7 +604,14 @@ export const useSupabase = () => {
       }
       
       console.log('getAgendamentos: Agendamentos encontrados:', data);
-      return data || [];
+      
+      // Type cast the status field to match our interface
+      const typedAgendamentos: Agendamento[] = (data || []).map(item => ({
+        ...item,
+        status: (item.status as 'scheduled' | 'confirmed' | 'completed' | 'cancelled') || 'scheduled'
+      }));
+      
+      return typedAgendamentos;
     } catch (error) {
       console.error('getAgendamentos: Erro inesperado:', error);
       return [];
@@ -993,7 +1000,14 @@ export const useSupabase = () => {
       }
       
       console.log('getAgendamentosByMonth: Agendamentos encontrados:', data);
-      return data || [];
+      
+      // Type cast the status field to match our interface
+      const typedAgendamentos: Agendamento[] = (data || []).map(item => ({
+        ...item,
+        status: (item.status as 'scheduled' | 'confirmed' | 'completed' | 'cancelled') || 'scheduled'
+      }));
+      
+      return typedAgendamentos;
     } catch (error) {
       console.error('getAgendamentosByMonth: Erro inesperado:', error);
       return [];
