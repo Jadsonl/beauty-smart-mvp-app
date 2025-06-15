@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ const Estoque = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [editingProductQuantity, setEditingProductQuantity] = useState<number>(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +50,9 @@ const Estoque = () => {
 
   const handleEditProduct = (produto: Produto) => {
     setEditingProduct(produto);
+    // ao editar, pega a quantidade certa do inventário!
+    const inv = inventario.find((i) => i.product_id === produto.id);
+    setEditingProductQuantity(inv ? inv.quantity ?? 0 : 0);
     setIsDialogOpen(true);
   };
 
@@ -90,6 +93,19 @@ const Estoque = () => {
   const openAddDialog = () => {
     setEditingProduct(null);
     setIsDialogOpen(true);
+  };
+
+  const handleUpdateInventory = async (productId: string, quantity: number) => {
+    const inv = inventario.find((item) => item.product_id === productId);
+    if (inv) {
+      // Atualizar existente
+      const { supabase } = await import('@/integrations/supabase/client'); // import dinâmico
+      await supabase
+        .from('product_inventory')
+        .update({ quantity }) // só atualiza a quantidade
+        .eq('id', inv.id);
+    }
+    // Caso não exista inventário, não faz nada.
   };
 
   if (loading) {
@@ -138,6 +154,8 @@ const Estoque = () => {
           onClose={closeDialog}
           editingProduct={editingProduct}
           onProductSaved={handleProductSaved}
+          initialQuantity={editingProduct ? editingProductQuantity : undefined} // passar quantidade ao editar!
+          onUpdateInventory={handleUpdateInventory}
         />
       </div>
     </Layout>

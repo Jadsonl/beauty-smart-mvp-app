@@ -12,9 +12,18 @@ interface ProductFormProps {
   onClose: () => void;
   editingProduct: Produto | null;
   onProductSaved: () => void;
+  initialQuantity?: number; // NOVO: Quantidade de estoque, se fornecida em edição
+  onUpdateInventory?: (productId: string, quantity: number) => Promise<void>; // NOVO: função para atualizar inventário
 }
 
-export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }: ProductFormProps) => {
+export const ProductForm = ({
+  isOpen,
+  onClose,
+  editingProduct,
+  onProductSaved,
+  initialQuantity = 0,
+  onUpdateInventory,
+}: ProductFormProps) => {
   const { addProduto, updateProduto } = useSupabase();
   const [formData, setFormData] = useState({
     name: '',
@@ -22,8 +31,9 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
     price: 0,
     category: '',
     unit: '',
-    min_stock_level: 0
+    min_stock_level: 0,
   });
+  const [stockQuantity, setStockQuantity] = useState<number>(0);
 
   // Preencher os dados ao receber um produto para edição
   useEffect(() => {
@@ -34,8 +44,9 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
         price: Number(editingProduct.price) || 0,
         category: editingProduct.category || '',
         unit: editingProduct.unit || '',
-        min_stock_level: editingProduct.min_stock_level || 0
+        min_stock_level: editingProduct.min_stock_level || 0,
       });
+      setStockQuantity(initialQuantity || 0);
     } else {
       setFormData({
         name: '',
@@ -43,10 +54,11 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
         price: 0,
         category: '',
         unit: '',
-        min_stock_level: 0
+        min_stock_level: 0,
       });
+      setStockQuantity(0);
     }
-  }, [editingProduct, isOpen]);
+  }, [editingProduct, isOpen, initialQuantity]);
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
@@ -58,6 +70,10 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
       let success = false;
       if (editingProduct) {
         success = await updateProduto(editingProduct.id, formData);
+        // Atualizar inventário, se foi passada a função (caso de edição)
+        if (success && typeof onUpdateInventory === 'function') {
+          await onUpdateInventory(editingProduct.id, stockQuantity);
+        }
       } else {
         success = await addProduto(formData);
       }
@@ -79,7 +95,9 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
         <DialogHeader>
           <DialogTitle>{editingProduct ? 'Editar Produto' : 'Adicionar Novo Produto'}</DialogTitle>
           <DialogDescription>
-            {editingProduct ? 'Edite as informações do produto.' : 'Preencha as informações do produto que deseja adicionar ao estoque.'}
+            {editingProduct
+              ? 'Edite as informações do produto.'
+              : 'Preencha as informações do produto que deseja adicionar ao estoque.'}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -88,7 +106,7 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Ex: Shampoo Anti-Caspa"
             />
           </div>
@@ -97,7 +115,7 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
             <Input
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Descrição do produto"
             />
           </div>
@@ -109,7 +127,7 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
                 type="number"
                 step="0.01"
                 value={formData.price}
-                onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                 placeholder="0,00"
               />
             </div>
@@ -118,7 +136,7 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
               <Input
                 id="category"
                 value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="Ex: Cabelo"
               />
             </div>
@@ -129,7 +147,7 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
               <Input
                 id="unit"
                 value={formData.unit}
-                onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                 placeholder="Ex: ml, un, kg"
               />
             </div>
@@ -139,14 +157,27 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
                 id="min_stock"
                 type="number"
                 value={formData.min_stock_level}
-                onChange={(e) => setFormData({...formData, min_stock_level: parseInt(e.target.value) || 0})}
+                onChange={(e) => setFormData({ ...formData, min_stock_level: parseInt(e.target.value) || 0 })}
                 placeholder="0"
               />
             </div>
           </div>
+          {editingProduct && (
+            <div>
+              <Label htmlFor="quantity">Quantidade em Estoque</Label>
+              <Input
+                id="quantity"
+                type="number"
+                value={stockQuantity}
+                min={0}
+                onChange={(e) => setStockQuantity(parseFloat(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row gap-2 pt-4">
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               className="bg-pink-600 hover:bg-pink-700 flex-1"
             >
               {editingProduct ? 'Atualizar Produto' : 'Adicionar Produto'}
@@ -160,3 +191,4 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
     </Dialog>
   );
 };
+
