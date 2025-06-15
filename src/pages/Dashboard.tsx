@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,11 +12,20 @@ import { toast } from 'sonner';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { getAgendamentos, getTransacoes, getClientes } = useSupabase();
+  const { 
+    getAgendamentos, 
+    getTransacoes, 
+    getClientes,
+    getProdutos,
+    getInventory
+  } = useSupabase();
   const { aniversariantesDoDia, loading: loadingAniversariantes, createBirthdayWhatsAppLink } = useAniversariantes();
   const [agendamentos, setAgendamentos] = useState<any[]>([]);
   const [transacoes, setTransacoes] = useState<any[]>([]);
   const [aniversariantes, setAniversariantes] = useState<any[]>([]);
+  const [produtos, setProdutos] = useState<any[]>([]);
+  const [inventario, setInventario] = useState<any[]>([]);
+  const [notificacoesLimpas, setNotificacoesLimpas] = useState(false);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -26,10 +34,12 @@ const Dashboard = () => {
         try {
           console.log('Dashboard: Carregando dados para usuário:', user.id);
           setLoading(true);
-          const [agendamentosData, transacoesData, clientesData] = await Promise.all([
+          const [agendamentosData, transacoesData, clientesData, produtosData, inventarioData] = await Promise.all([
             getAgendamentos(),
             getTransacoes(),
-            getClientes()
+            getClientes(),
+            getProdutos(),
+            getInventory()
           ]);
           
           // Filtrar aniversariantes do mês atual
@@ -48,6 +58,8 @@ const Dashboard = () => {
           setAgendamentos(agendamentosData);
           setTransacoes(transacoesData);
           setAniversariantes(aniversariantesDoMes);
+          setProdutos(produtosData || []);
+          setInventario(inventarioData || []);
         } catch (error) {
           console.error('Dashboard: Erro ao carregar dados:', error);
         } finally {
@@ -60,7 +72,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [user?.id, getAgendamentos, getTransacoes, getClientes]);
+  }, [user?.id, getAgendamentos, getTransacoes, getClientes, getProdutos, getInventory]);
 
   const handleWhatsAppClick = (cliente: any) => {
     const link = createBirthdayWhatsAppLink(cliente);
@@ -88,16 +100,15 @@ const Dashboard = () => {
     toast.success(`Mensagem de aniversário preparada para ${cliente.nome}!`);
   };
 
-  if (loading || loadingAniversariantes) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">Carregando dados...</p>
-        </div>
-      </Layout>
-    );
-  }
-  
+  const handleLimparNotificacoes = () => {
+    setNotificacoesLimpas(true);
+  };
+
+  const produtosComBaixoEstoque = produtos.filter(produto => {
+    const inventarioProduto = inventario.find(inv => inv.product_id === produto.id);
+    return inventarioProduto && inventarioProduto.quantity <= (produto.min_stock_level || 0);
+  });
+
   const today = new Date();
   const thisMonth = format(today, 'yyyy-MM');
   const todayStr = format(today, 'yyyy-MM-dd');
@@ -115,6 +126,16 @@ const Dashboard = () => {
     .filter(a => a.date === todayStr)
     .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
+  if (loading || loadingAniversariantes) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Carregando dados...</p>
+        </div>
+      </Layout>
+    );
+  }
+  
   return (
     <Layout>
       <div className="space-y-6 sm:space-y-8 p-4 sm:p-6">
@@ -260,15 +281,26 @@ const Dashboard = () => {
         {/* Notifications */}
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl dark:text-white">
-              <span className="text-xl">🔔</span>
-              Notificações
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl dark:text-white">
+                <span className="text-xl">🔔</span>
+                Notificações
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-gray-600 dark:text-gray-100 border-gray-300 dark:border-gray-700"
+                onClick={handleLimparNotificacoes}
+              >
+                Limpar Notificações
+              </Button>
+            </div>
             <CardDescription className="text-sm dark:text-gray-400">
               Atualizações importantes do seu negócio
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!notificacoesLimpas ? (
             <div className="space-y-3">
               {/* Aniversariantes do Dia - Individual com WhatsApp */}
               {aniversariantesDoDia.length > 0 && (
@@ -322,13 +354,43 @@ const Dashboard = () => {
                 </div>
               )}
               
-              {agendamentosHoje === 0 && aniversariantes.length === 0 && aniversariantesDoDia.length === 0 && (
+              {/* NOVO: Estoque baixo */}
+              {produtosComBaixoEstoque.length > 0 && (
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">⚠️</span>
+                    <span className="font-semibold text-orange-800 dark:text-orange-200 text-sm">
+                      {produtosComBaixoEstoque.length} produto{produtosComBaixoEstoque.length > 1 ? 's' : ''} com estoque baixo:
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {produtosComBaixoEstoque.map((produto) => {
+                      const inventarioProduto = inventario.find(inv => inv.product_id === produto.id);
+                      return (
+                        <span key={produto.id} className="bg-orange-200 text-orange-900 dark:bg-orange-950 dark:text-orange-200 px-2 py-1 rounded text-xs">
+                          {produto.name} ({inventarioProduto?.quantity ?? 0}{produto.unit ? ` ${produto.unit}` : ''} / mín: {produto.min_stock_level || 0})
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {agendamentosHoje === 0 && aniversariantes.length === 0 && aniversariantesDoDia.length === 0 && produtosComBaixoEstoque.length === 0 && (
                 <div className="text-center py-4">
                   <span className="text-2xl sm:text-4xl mb-2 block">✨</span>
                   <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Tudo em dia! Nenhuma notificação pendente.</p>
                 </div>
               )}
             </div>
+            ) : (
+              <div className="text-center py-4">
+                <span className="text-xl sm:text-2xl mb-2 block">🧹</span>
+                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                  Notificações limpas nesta sessão. Recarregue a página para ver novamente.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
