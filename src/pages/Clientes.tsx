@@ -44,7 +44,8 @@ const Clientes = () => {
     setFormData({
       nome: '',
       telefone: '',
-      email: ''
+      email: '',
+      date_of_birth: null
     });
     setEditingCliente(null);
   };
@@ -55,7 +56,8 @@ const Clientes = () => {
       setFormData({
         nome: cliente.nome,
         telefone: cliente.telefone || '',
-        email: cliente.email || ''
+        email: cliente.email || '',
+        date_of_birth: cliente.date_of_birth ? new Date(cliente.date_of_birth) : null
       });
     } else {
       resetForm();

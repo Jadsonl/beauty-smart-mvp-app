@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -186,6 +185,7 @@ export const useClientes = () => {
   return {
     loading,
     getClientes,
+    getAniversariantes,
     addCliente,
     updateCliente,
     deleteCliente
