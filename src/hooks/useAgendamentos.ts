@@ -81,9 +81,36 @@ export const useAgendamentos = () => {
         return;
       }
 
+      // Normalizar o status para evitar erros de case-sensitivity
+      const normalizedStatus = newStatus.toLowerCase();
+      let validStatus: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+      
+      switch (normalizedStatus) {
+        case 'agendado':
+        case 'scheduled':
+          validStatus = 'scheduled';
+          break;
+        case 'confirmado':
+        case 'confirmed':
+          validStatus = 'confirmed';
+          break;
+        case 'concluído':
+        case 'completed':
+          validStatus = 'completed';
+          break;
+        case 'cancelado':
+        case 'cancelled':
+          validStatus = 'cancelled';
+          break;
+        default:
+          console.error('useAgendamentos: Status inválido:', newStatus);
+          toast.error('Status inválido');
+          return;
+      }
+
       // Preparar dados com apenas o campo necessário
       const updateData = { 
-        status: newStatus as 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
+        status: validStatus
       };
       
       console.log('useAgendamentos: Dados para atualização:', updateData);
@@ -91,11 +118,11 @@ export const useAgendamentos = () => {
       const success = await updateAgendamento(agendamento.id, updateData);
       
       if (success) {
-        toast.success(`Status alterado para "${newStatus}" com sucesso!`);
+        toast.success(`Status alterado para "${validStatus}" com sucesso!`);
         // Update local list immediately for better UX
         setAgendamentos(prev => prev.map(a => 
           a.id === agendamento.id 
-            ? { ...a, status: newStatus as any }
+            ? { ...a, status: validStatus }
             : a
         ));
         console.log('useAgendamentos: Status atualizado localmente');

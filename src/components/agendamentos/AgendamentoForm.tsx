@@ -48,7 +48,9 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     clientes: clientes?.length || 0,
     servicos: servicos?.length || 0,
     profissionais: profissionais?.length || 0,
-    loading
+    loading,
+    hasValidClientes: clientes && clientes.length > 0,
+    hasValidServicos: servicos && servicos.length > 0
   });
 
   useEffect(() => {
@@ -153,14 +155,40 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     onClose();
   };
 
-  // Check if form is valid for submission
-  const isFormValid = formData.clienteId && formData.servicoId && formData.data && formData.horario;
+  // Check if form is valid for submission - CORRECTED LOGIC
+  const isFormValid = Boolean(
+    formData.clienteId && 
+    formData.servicoId && 
+    formData.data && 
+    formData.horario &&
+    clientes.length > 0 &&
+    servicos.length > 0
+  );
+  
   console.log('Formulário válido:', isFormValid, {
     clienteId: !!formData.clienteId,
     servicoId: !!formData.servicoId,
     data: !!formData.data,
-    horario: !!formData.horario
+    horario: !!formData.horario,
+    hasClientes: clientes.length > 0,
+    hasServicos: servicos.length > 0
   });
+
+  // Show loading state if data is still being fetched
+  if (!clientes || !servicos || !profissionais) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-center h-32">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando dados...</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
