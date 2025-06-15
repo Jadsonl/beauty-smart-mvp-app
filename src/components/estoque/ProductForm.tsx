@@ -1,10 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSupabase, type Produto } from '@/hooks/useSupabase';
 
@@ -26,13 +25,13 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
     min_stock_level: 0
   });
 
-  // Update form data when editing product changes
-  useState(() => {
+  // Preencher os dados ao receber um produto para edição
+  useEffect(() => {
     if (editingProduct) {
       setFormData({
-        name: editingProduct.name,
+        name: editingProduct.name || '',
         description: editingProduct.description || '',
-        price: editingProduct.price,
+        price: Number(editingProduct.price) || 0,
         category: editingProduct.category || '',
         unit: editingProduct.unit || '',
         min_stock_level: editingProduct.min_stock_level || 0
@@ -47,7 +46,7 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
         min_stock_level: 0
       });
     }
-  });
+  }, [editingProduct, isOpen]);
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
@@ -56,15 +55,12 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
     }
 
     try {
-      console.log('ProductForm: Salvando produto:', formData);
       let success = false;
-      
       if (editingProduct) {
         success = await updateProduto(editingProduct.id, formData);
       } else {
         success = await addProduto(formData);
       }
-
       if (success) {
         toast.success(editingProduct ? 'Produto atualizado com sucesso!' : 'Produto adicionado com sucesso!');
         onClose();
@@ -73,7 +69,6 @@ export const ProductForm = ({ isOpen, onClose, editingProduct, onProductSaved }:
         toast.error(editingProduct ? 'Erro ao atualizar produto' : 'Erro ao adicionar produto');
       }
     } catch (error) {
-      console.error('Erro ao salvar produto:', error);
       toast.error('Erro ao salvar produto');
     }
   };
