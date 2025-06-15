@@ -119,8 +119,10 @@ const Financeiro = () => {
 
     const tableColumn = ['Tipo', 'Descrição', 'Data', 'Profissional', 'Valor'];
     const tableRows = filteredTransacoes.map((t) => {
+      // SE for receita E tem profissional válido, mostra nome, caso contrário, string vazia
       const profissional = profissionais.find((p) => p.id === t.professional_id);
-      const professionalName = t.tipo === 'receita' && profissional ? profissional.name : 'Despesa';
+      const showProfessional = t.tipo === 'receita' && profissional && profissional.id !== '' && profissional.name !== '';
+      const professionalName = showProfessional ? profissional.name : '';
 
       return [
         t.tipo === 'receita' ? 'Receita' : 'Despesa',
@@ -151,7 +153,7 @@ const Financeiro = () => {
         1: { cellWidth: 46 },    // Descrição
         2: { cellWidth: 24 },    // Data
         3: { cellWidth: 44 },    // Profissional
-        4: { cellWidth: 38, halign: 'right' }, // Valor (mais largo e alinhado à direita)
+        4: { cellWidth: 38, halign: 'right' }, // Valor
       },
       didParseCell: function (data) {
         // Se for despesa E coluna == 'Valor', pinta de vermelho
@@ -192,11 +194,14 @@ const Financeiro = () => {
   const handleExportExcel = () => {
     const data = filteredTransacoes.map((t) => {
       const profissional = profissionais.find((p) => p.id === t.professional_id);
+      const showProfessional = t.tipo === 'receita' && profissional && profissional.id !== '' && profissional.name !== '';
+      const professionalName = showProfessional ? profissional.name : '';
+
       return {
         Tipo: t.tipo === 'receita' ? 'Receita' : 'Despesa',
         Descrição: t.descricao,
         Data: t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '',
-        Profissional: t.tipo === 'receita' && profissional ? profissional.name : 'Despesa',
+        Profissional: professionalName,
         Valor: (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
       };
     });
@@ -205,7 +210,7 @@ const Financeiro = () => {
     const total = filteredTransacoes.reduce((sum, t) =>
       t.tipo === 'receita' ? sum + t.valor : sum - t.valor, 0);
 
-    // Adicionar linha de total (em negrito dependendo do app do usuário)
+    // Linha total
     data.push({
       Tipo: '',
       Descrição: '',
@@ -362,9 +367,9 @@ const Financeiro = () => {
               {filteredTransacoes.map((transacao) => {
                 // Find professional name for this transaction
                 const professional = profissionais.find(p => p.id === transacao.professional_id);
-                const professionalName = transacao.tipo === 'receita' && professional 
-                  ? professional.name 
-                  : 'Despesa';
+                // NOVO: lógica para mostrar vazio quando for despesa ou não tem professional válido
+                const showProfessional = transacao.tipo === 'receita' && professional && professional.id !== '' && professional.name !== '';
+                const professionalName = showProfessional ? professional.name : '';
 
                 return (
                   <div key={transacao.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-2 hover:bg-gray-50">
@@ -377,6 +382,7 @@ const Financeiro = () => {
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
                         <span>{format(new Date(transacao.data), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                        {/* Aqui mostra o nome se existir, caso contrário, nada */}
                         <span className="font-medium text-gray-800">{professionalName}</span>
                       </div>
                     </div>
