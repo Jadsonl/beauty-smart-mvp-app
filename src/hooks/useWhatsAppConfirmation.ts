@@ -11,6 +11,29 @@ export const useWhatsAppConfirmation = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const formatPhoneNumber = (phone: string): string => {
+    // Remove todos os caracteres não numéricos
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Se já tem código do país (55), mantém
+    if (cleanPhone.startsWith('55') && cleanPhone.length >= 12) {
+      return cleanPhone;
+    }
+    
+    // Se tem 11 dígitos (DDD + número), adiciona código do país
+    if (cleanPhone.length === 11) {
+      return `55${cleanPhone}`;
+    }
+    
+    // Se tem 10 dígitos, adiciona 9 após o DDD e código do país
+    if (cleanPhone.length === 10) {
+      return `55${cleanPhone.slice(0, 2)}9${cleanPhone.slice(2)}`;
+    }
+    
+    console.warn('Formato de telefone não reconhecido:', phone);
+    return cleanPhone;
+  };
+
   const generateConfirmationToken = async (appointmentId: string): Promise<string | null> => {
     if (!user?.id) {
       console.error('User not authenticated');
@@ -56,8 +79,8 @@ export const useWhatsAppConfirmation = () => {
         return;
       }
 
-      // Business WhatsApp number
-      const businessPhone = '5571993131463'; // (55) 71 99313-1463
+      // Format client phone number to international format
+      const clientPhone = formatPhoneNumber(agendamento.client_phone);
       
       // Format date
       const formattedDate = format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR });
@@ -82,8 +105,11 @@ Obrigado!`;
       // Encode message for URL
       const encodedMessage = encodeURIComponent(message);
       
-      // Create WhatsApp URL
-      const whatsappUrl = `https://wa.me/${businessPhone}?text=${encodedMessage}`;
+      // Create WhatsApp URL using CLIENT'S phone number
+      const whatsappUrl = `https://wa.me/${clientPhone}?text=${encodedMessage}`;
+      
+      console.log('WhatsApp URL gerada:', whatsappUrl);
+      console.log('Número do cliente formatado:', clientPhone);
       
       // Open WhatsApp
       window.open(whatsappUrl, '_blank');
