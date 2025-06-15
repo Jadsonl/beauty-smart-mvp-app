@@ -3,15 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from "@/lib/utils";
 import { type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
+import { ClientSelector } from './ClientSelector';
+import { ServiceSelector } from './ServiceSelector';
+import { ProfessionalSelector } from './ProfessionalSelector';
+import { DateTimeSelector } from './DateTimeSelector';
 
 interface AgendamentoFormProps {
   isOpen: boolean;
@@ -23,13 +21,6 @@ interface AgendamentoFormProps {
   profissionais: Profissional[];
   loading: boolean;
 }
-
-const timeSlots = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
-];
 
 export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
   isOpen,
@@ -60,43 +51,12 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     loading
   });
 
-  // Filter out any invalid data that could cause the Select.Item error
-  const validClientes = clientes?.filter(cliente => 
-    cliente && 
-    cliente.id && 
-    cliente.id.trim() !== '' && 
-    cliente.nome && 
-    cliente.nome.trim() !== ''
-  ) || [];
-
-  const validServicos = servicos?.filter(servico => 
-    servico && 
-    servico.id && 
-    servico.id.trim() !== '' && 
-    servico.nome && 
-    servico.nome.trim() !== ''
-  ) || [];
-
-  const validProfissionais = profissionais?.filter(profissional => 
-    profissional && 
-    profissional.id && 
-    profissional.id.trim() !== '' && 
-    profissional.name && 
-    profissional.name.trim() !== ''
-  ) || [];
-
-  console.log('Dados válidos:', {
-    validClientes: validClientes.length,
-    validServicos: validServicos.length,
-    validProfissionais: validProfissionais.length
-  });
-
   useEffect(() => {
     console.log('useEffect disparado - editingAgendamento:', editingAgendamento);
     
     if (editingAgendamento) {
       // Find client by name
-      const cliente = validClientes.find(c => c.nome === editingAgendamento.client_name);
+      const cliente = clientes.find(c => c.nome === editingAgendamento.client_name);
       
       const newFormData = {
         clienteId: cliente?.id || '',
@@ -113,7 +73,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     } else {
       resetForm();
     }
-  }, [editingAgendamento, validClientes]);
+  }, [editingAgendamento, clientes]);
 
   const resetForm = () => {
     console.log('Resetando formulário');
@@ -138,7 +98,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     setFormData(prev => ({ ...prev, servicoId }));
     
     // Pre-fill service value
-    const servico = validServicos.find(s => s.id === servicoId);
+    const servico = servicos.find(s => s.id === servicoId);
     if (servico) {
       console.log('Preenchendo valor do serviço:', servico.preco);
       setFormData(prev => ({ ...prev, servicoValor: servico.preco.toString() }));
@@ -218,145 +178,32 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="cliente">Selecione o Cliente</Label>
-            {validClientes.length === 0 ? (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800">
-                  Nenhum cliente válido encontrado. Cadastre um cliente primeiro.
-                </p>
-              </div>
-            ) : (
-              <Select 
-                value={formData.clienteId} 
-                onValueChange={handleClienteChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {validClientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome} {cliente.telefone ? `- ${cliente.telefone}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          <ClientSelector
+            value={formData.clienteId}
+            onChange={handleClienteChange}
+            clientes={clientes}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="servico">Serviço</Label>
-            {validServicos.length === 0 ? (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <p className="text-sm text-yellow-800">
-                  Nenhum serviço válido encontrado. Cadastre um serviço primeiro.
-                </p>
-              </div>
-            ) : (
-              <Select 
-                value={formData.servicoId} 
-                onValueChange={handleServicoChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {validServicos.map((servico) => (
-                    <SelectItem key={servico.id} value={servico.id}>
-                      {servico.nome} - R$ {servico.preco.toFixed(2)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+          <ServiceSelector
+            servicoId={formData.servicoId}
+            servicoValor={formData.servicoValor}
+            onServicoChange={handleServicoChange}
+            onValorChange={handleValorChange}
+            servicos={servicos}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="valor">Valor do Serviço (R$)</Label>
-            <Input
-              id="valor"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              value={formData.servicoValor}
-              onChange={handleValorChange}
-            />
-          </div>
+          <ProfessionalSelector
+            value={formData.profissionalId}
+            onChange={handleProfissionalChange}
+            profissionais={profissionais}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="profissional">Profissional (Opcional)</Label>
-            <Select 
-              value={formData.profissionalId} 
-              onValueChange={handleProfissionalChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Escolha um profissional" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Não definir profissional</SelectItem>
-                {validProfissionais.map((profissional) => (
-                  <SelectItem key={profissional.id} value={profissional.id}>
-                    {profissional.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Data</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.data && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data ? (
-                      format(new Date(formData.data), "dd/MM/yyyy", { locale: ptBR })
-                    ) : (
-                      <span>Selecione a data</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.data ? new Date(formData.data) : undefined}
-                    onSelect={handleDateSelect}
-                    locale={ptBR}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="horario">Horário</Label>
-              <Select 
-                value={formData.horario} 
-                onValueChange={handleHorarioChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Horário" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <DateTimeSelector
+            data={formData.data}
+            horario={formData.horario}
+            onDateSelect={handleDateSelect}
+            onHorarioChange={handleHorarioChange}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="observacoes">Observações (Opcional)</Label>

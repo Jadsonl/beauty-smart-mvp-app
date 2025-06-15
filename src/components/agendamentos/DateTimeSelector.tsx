@@ -1,0 +1,87 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from "@/lib/utils";
+
+interface DateTimeSelectorProps {
+  data: string;
+  horario: string;
+  onDateSelect: (date: Date | undefined) => void;
+  onHorarioChange: (horario: string) => void;
+}
+
+const timeSlots = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
+];
+
+export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
+  data,
+  horario,
+  onDateSelect,
+  onHorarioChange
+}) => {
+  console.log('DateTimeSelector: Renderizado com data =', data, 'horario =', horario);
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <Label>Data</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !data && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {data ? (
+                format(new Date(data), "dd/MM/yyyy", { locale: ptBR })
+              ) : (
+                <span>Selecione a data</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={data ? new Date(data) : undefined}
+              onSelect={onDateSelect}
+              locale={ptBR}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="horario">Horário</Label>
+        <Select value={horario} onValueChange={onHorarioChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Horário" />
+          </SelectTrigger>
+          <SelectContent>
+            {timeSlots.map((time) => (
+              <SelectItem key={time} value={time}>
+                {time}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+};
