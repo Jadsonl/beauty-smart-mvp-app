@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,21 +16,21 @@ export const useWhatsAppConfirmation = () => {
     
     // Se já tem código do país (55), mantém
     if (cleanPhone.startsWith('55') && cleanPhone.length >= 12) {
-      return cleanPhone;
+      return `+${cleanPhone}`;
     }
     
     // Se tem 11 dígitos (DDD + número), adiciona código do país
     if (cleanPhone.length === 11) {
-      return `55${cleanPhone}`;
+      return `+55${cleanPhone}`;
     }
     
     // Se tem 10 dígitos, adiciona 9 após o DDD e código do país
     if (cleanPhone.length === 10) {
-      return `55${cleanPhone.slice(0, 2)}9${cleanPhone.slice(2)}`;
+      return `+55${cleanPhone.slice(0, 2)}9${cleanPhone.slice(2)}`;
     }
     
     console.warn('Formato de telefone não reconhecido:', phone);
-    return cleanPhone;
+    return `+${cleanPhone}`;
   };
 
   const generateConfirmationToken = async (appointmentId: string): Promise<string | null> => {
@@ -79,7 +78,7 @@ export const useWhatsAppConfirmation = () => {
         return;
       }
 
-      // Format client phone number to international format
+      // Format client phone number to international format with +
       const clientPhone = formatPhoneNumber(agendamento.client_phone);
       
       // Format date
@@ -105,14 +104,35 @@ Obrigado!`;
       // Encode message for URL
       const encodedMessage = encodeURIComponent(message);
       
-      // Create WhatsApp URL using CLIENT'S phone number
-      const whatsappUrl = `https://wa.me/${clientPhone}?text=${encodedMessage}`;
+      // Detect if user is on iOS for better compatibility
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      let whatsappUrl: string;
+      
+      if (isIOS) {
+        // For iOS, try the direct WhatsApp scheme first, fallback to wa.me
+        const phoneWithoutPlus = clientPhone.replace('+', '');
+        whatsappUrl = `whatsapp://send?phone=${phoneWithoutPlus}&text=${encodedMessage}`;
+      } else {
+        // For other platforms, use wa.me with +
+        whatsappUrl = `https://wa.me/${clientPhone}?text=${encodedMessage}`;
+      }
       
       console.log('WhatsApp URL gerada:', whatsappUrl);
       console.log('Número do cliente formatado:', clientPhone);
+      console.log('Plataforma detectada:', isIOS ? 'iOS' : 'Outras');
       
       // Open WhatsApp
-      window.open(whatsappUrl, '_blank');
+      const opened = window.open(whatsappUrl, '_blank');
+      
+      // If whatsapp:// scheme fails on iOS, fallback to wa.me
+      if (isIOS && !opened) {
+        setTimeout(() => {
+          const fallbackUrl = `https://wa.me/${clientPhone}?text=${encodedMessage}`;
+          console.log('Fallback para wa.me:', fallbackUrl);
+          window.open(fallbackUrl, '_blank');
+        }, 1000);
+      }
       
       toast.success('Link de confirmação criado! WhatsApp foi aberto.');
       
