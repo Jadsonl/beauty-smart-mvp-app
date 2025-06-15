@@ -32,16 +32,21 @@ export const useAgendamentos = () => {
         getProfissionais()
       ]);
       
+      // Filter out any invalid data
+      const validClientes = clientesData.filter(cliente => cliente && cliente.id && cliente.nome);
+      const validServicos = servicosData.filter(servico => servico && servico.id && servico.nome);
+      const validProfissionais = profissionaisData.filter(profissional => profissional && profissional.id && profissional.name);
+      
       setAgendamentos(agendamentosData);
-      setClientes(clientesData);
-      setServicos(servicosData);
-      setProfissionais(profissionaisData);
+      setClientes(validClientes);
+      setServicos(validServicos);
+      setProfissionais(validProfissionais);
       
       console.log('Dados carregados:', { 
         agendamentos: agendamentosData.length, 
-        clientes: clientesData.length,
-        servicos: servicosData.length,
-        profissionais: profissionaisData.length
+        clientes: validClientes.length,
+        servicos: validServicos.length,
+        profissionais: validProfissionais.length
       });
     };
 
@@ -96,7 +101,7 @@ export const useAgendamentos = () => {
       service: servico.nome,
       service_id: formData.servicoId,
       service_value_at_appointment: parseFloat(formData.servicoValor) || servico.preco,
-      professional_id: formData.profissionalId || undefined,
+      professional_id: formData.profissionalId && formData.profissionalId !== 'none' ? formData.profissionalId : undefined,
       date: formData.data,
       time: formData.horario,
       status: 'scheduled' as const,

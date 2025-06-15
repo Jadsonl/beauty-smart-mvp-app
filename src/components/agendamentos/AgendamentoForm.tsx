@@ -51,10 +51,35 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     observacoes: ''
   });
 
+  // Filter out any invalid data that could cause the Select.Item error
+  const validClientes = clientes.filter(cliente => 
+    cliente && 
+    cliente.id && 
+    cliente.id.trim() !== '' && 
+    cliente.nome && 
+    cliente.nome.trim() !== ''
+  );
+
+  const validServicos = servicos.filter(servico => 
+    servico && 
+    servico.id && 
+    servico.id.trim() !== '' && 
+    servico.nome && 
+    servico.nome.trim() !== ''
+  );
+
+  const validProfissionais = profissionais.filter(profissional => 
+    profissional && 
+    profissional.id && 
+    profissional.id.trim() !== '' && 
+    profissional.name && 
+    profissional.name.trim() !== ''
+  );
+
   useEffect(() => {
     if (editingAgendamento) {
       // Find client by name
-      const cliente = clientes.find(c => c.nome === editingAgendamento.client_name);
+      const cliente = validClientes.find(c => c.nome === editingAgendamento.client_name);
       
       setFormData({
         clienteId: cliente?.id || '',
@@ -68,7 +93,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     } else {
       resetForm();
     }
-  }, [editingAgendamento, clientes]);
+  }, [editingAgendamento, validClientes]);
 
   const resetForm = () => {
     setFormData({
@@ -86,7 +111,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     setFormData(prev => ({ ...prev, servicoId }));
     
     // Pre-fill service value
-    const servico = servicos.find(s => s.id === servicoId);
+    const servico = validServicos.find(s => s.id === servicoId);
     if (servico) {
       setFormData(prev => ({ ...prev, servicoValor: servico.preco.toString() }));
     }
@@ -125,10 +150,10 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="cliente">Selecione o Cliente</Label>
-            {clientes.length === 0 ? (
+            {validClientes.length === 0 ? (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-sm text-yellow-800">
-                  Nenhum cliente cadastrado. Cadastre um cliente primeiro.
+                  Nenhum cliente válido encontrado. Cadastre um cliente primeiro.
                 </p>
               </div>
             ) : (
@@ -140,9 +165,9 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
                   <SelectValue placeholder="Escolha um cliente" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clientes.map((cliente) => (
+                  {validClientes.map((cliente) => (
                     <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome} - {cliente.telefone}
+                      {cliente.nome} {cliente.telefone ? `- ${cliente.telefone}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -152,10 +177,10 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="servico">Serviço</Label>
-            {servicos.length === 0 ? (
+            {validServicos.length === 0 ? (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-sm text-yellow-800">
-                  Nenhum serviço cadastrado. Cadastre um serviço primeiro.
+                  Nenhum serviço válido encontrado. Cadastre um serviço primeiro.
                 </p>
               </div>
             ) : (
@@ -167,7 +192,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
                   <SelectValue placeholder="Escolha um serviço" />
                 </SelectTrigger>
                 <SelectContent>
-                  {servicos.map((servico) => (
+                  {validServicos.map((servico) => (
                     <SelectItem key={servico.id} value={servico.id}>
                       {servico.nome} - R$ {servico.preco.toFixed(2)}
                     </SelectItem>
@@ -199,8 +224,8 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
                 <SelectValue placeholder="Escolha um profissional" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Não definir profissional</SelectItem>
-                {profissionais.map((profissional) => (
+                <SelectItem value="none">Não definir profissional</SelectItem>
+                {validProfissionais.map((profissional) => (
                   <SelectItem key={profissional.id} value={profissional.id}>
                     {profissional.name}
                   </SelectItem>
@@ -291,7 +316,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
             <Button 
               type="submit" 
               className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-              disabled={clientes.length === 0 || servicos.length === 0 || !formData.clienteId || loading}
+              disabled={validClientes.length === 0 || validServicos.length === 0 || !formData.clienteId || loading}
             >
               {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
             </Button>
