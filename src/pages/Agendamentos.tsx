@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,10 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { useSupabase, type Agendamento, type Cliente } from '@/hooks/useSupabase';
+import { useSupabase, type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
 // --- Only import CalendarIcon from lucide-react, NOT Calendar!! ---
-import { CalendarIcon, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { CalendarIcon, Clock, User, Phone, Mail, Plus, Edit, Trash2, Save, X, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -29,18 +30,23 @@ const Agendamentos = () => {
     updateAgendamento, 
     deleteAgendamento,
     getClientes,
+    getServicos,
+    getProfissionais,
     loading 
   } = useSupabase();
   
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAgendamento, setEditingAgendamento] = useState<Agendamento | null>(null);
   
   const [formData, setFormData] = useState({
     clienteId: '',
-    servico: '',
-    profissional: '',
+    servicoId: '',
+    profissionalId: '',
+    servicoValor: '',
     data: '',
     horario: '',
     observacoes: ''
@@ -53,20 +59,36 @@ const Agendamentos = () => {
     '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
   ];
 
+  const statusOptions = [
+    { value: 'scheduled', label: 'Agendado', color: 'bg-blue-100 text-blue-800' },
+    { value: 'confirmed', label: 'Confirmado', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'completed', label: 'Concluído', color: 'bg-green-100 text-green-800' },
+    { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-800' }
+  ];
+
   // Carregar dados do Supabase
   useEffect(() => {
     const loadData = async () => {
-      console.log('Carregando agendamentos e clientes do Supabase...');
+      console.log('Carregando agendamentos, clientes, serviços e profissionais do Supabase...');
       
-      const [agendamentosData, clientesData] = await Promise.all([
+      const [agendamentosData, clientesData, servicosData, profissionaisData] = await Promise.all([
         getAgendamentos(),
-        getClientes()
+        getClientes(),
+        getServicos(),
+        getProfissionais()
       ]);
       
       setAgendamentos(agendamentosData);
       setClientes(clientesData);
+      setServicos(servicosData);
+      setProfissionais(profissionaisData);
       
-      console.log('Dados carregados:', { agendamentos: agendamentosData.length, clientes: clientesData.length });
+      console.log('Dados carregados:', { 
+        agendamentos: agendamentosData.length, 
+        clientes: clientesData.length,
+        servicos: servicosData.length,
+        profissionais: profissionaisData.length
+      });
     };
 
     loadData();
@@ -75,8 +97,9 @@ const Agendamentos = () => {
   const resetForm = () => {
     setFormData({
       clienteId: '',
-      servico: '',
-      profissional: '',
+      servicoId: '',
+      profissionalId: '',
+      servicoValor: '',
       data: '',
       horario: '',
       observacoes: ''
@@ -93,8 +116,9 @@ const Agendamentos = () => {
       
       setFormData({
         clienteId: cliente?.id || '',
-        servico: agendamento.service,
-        profissional: 'Profissional',
+        servicoId: agendamento.service_id || '',
+        profissionalId: agendamento.professional_id || '',
+        servicoValor: agendamento.service_value_at_appointment?.toString() || '',
         data: agendamento.date,
         horario: agendamento.time,
         observacoes: agendamento.notes || ''
@@ -110,17 +134,29 @@ const Agendamentos = () => {
     resetForm();
   };
 
+  const handleServicoChange = (servicoId: string) => {
+    setFormData(prev => ({ ...prev, servicoId }));
+    
+    // Pré-preencher o valor do serviço
+    const servico = servicos.find(s => s.id === servicoId);
+    if (servico) {
+      setFormData(prev => ({ ...prev, servicoValor: servico.preco.toString() }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.clienteId || !formData.servico || !formData.data || !formData.horario) {
+    if (!formData.clienteId || !formData.servicoId || !formData.data || !formData.horario) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
     const cliente = clientes.find(c => c.id === formData.clienteId);
-    if (!cliente) {
-      toast.error('Cliente não encontrado');
+    const servico = servicos.find(s => s.id === formData.servicoId);
+    
+    if (!cliente || !servico) {
+      toast.error('Cliente ou serviço não encontrado');
       return;
     }
 
@@ -128,7 +164,10 @@ const Agendamentos = () => {
       client_name: cliente.nome,
       client_email: cliente.email || '',
       client_phone: cliente.telefone || '',
-      service: formData.servico,
+      service: servico.nome,
+      service_id: formData.servicoId,
+      service_value_at_appointment: parseFloat(formData.servicoValor) || servico.preco,
+      professional_id: formData.profissionalId || undefined,
       date: formData.data,
       time: formData.horario,
       status: 'scheduled' as const,
@@ -177,6 +216,39 @@ const Agendamentos = () => {
         toast.error('Erro ao excluir agendamento');
       }
     }
+  };
+
+  const handleStatusChange = async (agendamento: Agendamento, newStatus: string) => {
+    const success = await updateAgendamento(agendamento.id, { status: newStatus as any });
+    if (success) {
+      toast.success('Status atualizado com sucesso!');
+      // Atualizar lista local
+      setAgendamentos(prev => prev.map(a => 
+        a.id === agendamento.id 
+          ? { ...a, status: newStatus as any }
+          : a
+      ));
+    } else {
+      toast.error('Erro ao atualizar status');
+    }
+  };
+
+  const getClienteName = (clientName: string) => {
+    return clientName;
+  };
+
+  const getServiceName = (serviceId: string, serviceName: string) => {
+    const servico = servicos.find(s => s.id === serviceId);
+    return servico ? servico.nome : serviceName;
+  };
+
+  const getProfessionalName = (professionalId: string) => {
+    const profissional = profissionais.find(p => p.id === professionalId);
+    return profissional ? profissional.name : 'Não definido';
+  };
+
+  const getStatusConfig = (status: string) => {
+    return statusOptions.find(opt => opt.value === status) || statusOptions[0];
   };
 
   const sortedAgendamentos = [...agendamentos].sort((a, b) => {
@@ -268,12 +340,61 @@ const Agendamentos = () => {
 
                       <div className="space-y-2">
                         <Label htmlFor="servico">Serviço</Label>
+                        {servicos.length === 0 ? (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-sm text-yellow-800">
+                              Nenhum serviço cadastrado. Cadastre um serviço primeiro.
+                            </p>
+                          </div>
+                        ) : (
+                          <Select 
+                            value={formData.servicoId} 
+                            onValueChange={handleServicoChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Escolha um serviço" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {servicos.map((servico) => (
+                                <SelectItem key={servico.id} value={servico.id}>
+                                  {servico.nome} - R$ {servico.preco.toFixed(2)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="valor">Valor do Serviço (R$)</Label>
                         <Input
-                          id="servico"
-                          placeholder="Ex: Corte + Barba"
-                          value={formData.servico}
-                          onChange={(e) => setFormData(prev => ({ ...prev, servico: e.target.value }))}
+                          id="valor"
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={formData.servicoValor}
+                          onChange={(e) => setFormData(prev => ({ ...prev, servicoValor: e.target.value }))}
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="profissional">Profissional (Opcional)</Label>
+                        <Select 
+                          value={formData.profissionalId} 
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, profissionalId: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Escolha um profissional" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Não definir profissional</SelectItem>
+                            {profissionais.map((profissional) => (
+                              <SelectItem key={profissional.id} value={profissional.id}>
+                                {profissional.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -309,7 +430,6 @@ const Agendamentos = () => {
                                   }
                                 }}
                                 locale={ptBR}
-                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 initialFocus
                                 className={cn("p-3 pointer-events-auto")}
                               />
@@ -359,7 +479,7 @@ const Agendamentos = () => {
                         <Button 
                           type="submit" 
                           className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-                          disabled={clientes.length === 0 || !formData.clienteId || loading}
+                          disabled={clientes.length === 0 || servicos.length === 0 || !formData.clienteId || loading}
                         >
                           {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
                         </Button>
@@ -399,65 +519,89 @@ const Agendamentos = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {sortedAgendamentos.map((agendamento) => (
-                        <div 
-                          key={agendamento.id} 
-                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow gap-4"
-                        >
-                          <div className="flex-1">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-                              <h3 className="font-semibold text-base sm:text-lg">{agendamento.client_name}</h3>
-                              <span className={cn(
-                                "px-2 py-1 text-xs font-medium rounded-full w-fit",
-                                agendamento.status === 'scheduled' && "bg-blue-100 text-blue-800",
-                                agendamento.status === 'completed' && "bg-green-100 text-green-800",
-                                agendamento.status === 'cancelled' && "bg-red-100 text-red-800"
-                              )}>
-                                {agendamento.status === 'scheduled' ? 'Agendado' : 
-                                 agendamento.status === 'completed' ? 'Concluído' : 'Cancelado'}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600">
-                              <div>
-                                <span className="font-medium">Serviço:</span>
-                                <p className="truncate">{agendamento.service}</p>
+                      {sortedAgendamentos.map((agendamento) => {
+                        const statusConfig = getStatusConfig(agendamento.status || 'scheduled');
+                        return (
+                          <div 
+                            key={agendamento.id} 
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow gap-4"
+                          >
+                            <div className="flex-1">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                                <h3 className="font-semibold text-base sm:text-lg">{getClienteName(agendamento.client_name)}</h3>
+                                <Select
+                                  value={agendamento.status || 'scheduled'}
+                                  onValueChange={(value) => handleStatusChange(agendamento, value)}
+                                >
+                                  <SelectTrigger className="w-fit">
+                                    <span className={cn(
+                                      "px-2 py-1 text-xs font-medium rounded-full",
+                                      statusConfig.color
+                                    )}>
+                                      {statusConfig.label}
+                                    </span>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {statusOptions.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </div>
-                              <div>
-                                <span className="font-medium">Data:</span>
-                                <p>{format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                              </div>
-                              <div>
-                                <span className="font-medium">Horário:</span>
-                                <p>{agendamento.time}</p>
-                              </div>
-                              {agendamento.notes && (
-                                <div className="sm:col-span-2 lg:col-span-1">
-                                  <span className="font-medium">Obs:</span>
-                                  <p className="truncate">{agendamento.notes}</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-gray-600">
+                                <div>
+                                  <span className="font-medium">Serviço:</span>
+                                  <p className="truncate">{getServiceName(agendamento.service_id || '', agendamento.service)}</p>
                                 </div>
-                              )}
+                                <div>
+                                  <span className="font-medium">Profissional:</span>
+                                  <p className="truncate">{getProfessionalName(agendamento.professional_id || '')}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Data:</span>
+                                  <p>{format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Horário:</span>
+                                  <p>{agendamento.time}</p>
+                                </div>
+                                {agendamento.service_value_at_appointment && (
+                                  <div>
+                                    <span className="font-medium">Valor:</span>
+                                    <p className="text-green-600 font-medium">R$ {agendamento.service_value_at_appointment.toFixed(2)}</p>
+                                  </div>
+                                )}
+                                {agendamento.notes && (
+                                  <div className="sm:col-span-2 lg:col-span-1">
+                                    <span className="font-medium">Obs:</span>
+                                    <p className="truncate">{agendamento.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 self-end sm:self-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenDialog(agendamento)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(agendamento)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center space-x-2 self-end sm:self-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenDialog(agendamento)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(agendamento)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>

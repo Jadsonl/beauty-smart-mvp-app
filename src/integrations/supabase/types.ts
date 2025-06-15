@@ -18,7 +18,10 @@ export type Database = {
           date: string
           id: string
           notes: string | null
+          professional_id: string | null
           service: string
+          service_id: string | null
+          service_value_at_appointment: number | null
           status: string | null
           time: string
           user_id: string
@@ -31,7 +34,10 @@ export type Database = {
           date: string
           id?: string
           notes?: string | null
+          professional_id?: string | null
           service: string
+          service_id?: string | null
+          service_value_at_appointment?: number | null
           status?: string | null
           time: string
           user_id: string
@@ -44,12 +50,30 @@ export type Database = {
           date?: string
           id?: string
           notes?: string | null
+          professional_id?: string | null
           service?: string
+          service_id?: string | null
+          service_value_at_appointment?: number | null
           status?: string | null
           time?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "appointments_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -151,6 +175,33 @@ export type Database = {
           price?: number
           unit?: string | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      professionals: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
           user_id?: string
         }
         Relationships: []

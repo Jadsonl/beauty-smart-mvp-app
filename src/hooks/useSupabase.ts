@@ -22,6 +22,15 @@ export interface Servico {
   created_at?: string;
 }
 
+export interface Profissional {
+  id: string;
+  user_id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  created_at?: string;
+}
+
 export interface Transacao {
   id: string;
   user_id: string;
@@ -40,9 +49,12 @@ export interface Agendamento {
   client_email: string;
   client_phone: string;
   service: string;
+  service_id?: string;
+  service_value_at_appointment?: number;
+  professional_id?: string;
   date: string;
   time: string;
-  status?: string;
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
   created_at?: string;
 }
@@ -336,6 +348,132 @@ export const useSupabase = () => {
     }
   }, [user]);
 
+  // PROFISSIONAIS - novas funções
+  const getProfissionais = useCallback(async (): Promise<Profissional[]> => {
+    if (!user?.id) {
+      console.warn('getProfissionais: Usuário não autenticado. Não será possível carregar profissionais.');
+      return [];
+    }
+    
+    setLoading(true);
+    console.log('getProfissionais: Iniciando busca para user_id:', user.id);
+    
+    try {
+      const { data, error } = await supabase
+        .from('professionals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+      
+      if (error) {
+        console.error('getProfissionais: Erro ao buscar profissionais:', error);
+        return [];
+      }
+      
+      console.log('getProfissionais: Profissionais encontrados:', data);
+      return data || [];
+    } catch (error) {
+      console.error('getProfissionais: Erro inesperado:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const addProfissional = useCallback(async (profissionalData: Omit<Profissional, 'id' | 'user_id' | 'created_at'>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('addProfissional: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('addProfissional: Adicionando profissional para user_id:', user.id, 'dados:', profissionalData);
+    
+    try {
+      const { error } = await supabase
+        .from('professionals')
+        .insert({
+          user_id: user.id,
+          ...profissionalData
+        });
+      
+      if (error) {
+        console.error('addProfissional: Erro ao criar profissional:', error);
+        return false;
+      }
+      
+      console.log('addProfissional: Profissional criado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('addProfissional: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const updateProfissional = useCallback(async (id: string, profissionalData: Partial<Profissional>): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('updateProfissional: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('updateProfissional: Atualizando profissional', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('professionals')
+        .update(profissionalData)
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('updateProfissional: Erro ao atualizar profissional:', error);
+        return false;
+      }
+      
+      console.log('updateProfissional: Profissional atualizado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('updateProfissional: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const deleteProfissional = useCallback(async (id: string): Promise<boolean> => {
+    if (!user?.id) {
+      console.warn('deleteProfissional: Usuário não autenticado');
+      return false;
+    }
+    
+    setLoading(true);
+    console.log('deleteProfissional: Deletando profissional', id, 'para user_id:', user.id);
+    
+    try {
+      const { error } = await supabase
+        .from('professionals')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('deleteProfissional: Erro ao deletar profissional:', error);
+        return false;
+      }
+      
+      console.log('deleteProfissional: Profissional deletado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('deleteProfissional: Erro inesperado:', error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   // TRANSAÇÕES - usando useCallback
   const getTransacoes = useCallback(async (): Promise<Transacao[]> => {
     if (!user?.id) {
@@ -493,6 +631,9 @@ export const useSupabase = () => {
           client_email: agendamentoData.client_email,
           client_phone: agendamentoData.client_phone,
           service: agendamentoData.service,
+          service_id: agendamentoData.service_id,
+          service_value_at_appointment: agendamentoData.service_value_at_appointment,
+          professional_id: agendamentoData.professional_id,
           date: agendamentoData.date,
           time: agendamentoData.time,
           status: agendamentoData.status || 'scheduled',
@@ -873,6 +1014,11 @@ export const useSupabase = () => {
     addServico,
     updateServico,
     deleteServico,
+    // Profissionais - novas funções
+    getProfissionais,
+    addProfissional,
+    updateProfissional,
+    deleteProfissional,
     // Transações
     getTransacoes,
     addTransacao,

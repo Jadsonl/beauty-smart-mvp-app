@@ -1,9 +1,9 @@
-
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { BarChart3, Users, UserCheck, Scissors, Calendar, Package, DollarSign, Settings } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,14 +16,54 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/agendamentos', label: 'Agendamentos', icon: '📅' },
-    { path: '/clientes', label: 'Clientes', icon: '👥' },
-    { path: '/servicos', label: 'Serviços', icon: '✂️' },
-    { path: '/financeiro', label: 'Financeiro', icon: '💰' },
-    { path: '/estoque', label: 'Estoque', icon: '📦' },
-    { path: '/planos', label: 'Planos', icon: '🎯' },
-    { path: '/configuracoes', label: 'Configurações', icon: '⚙️' },
+    { 
+      name: 'Dashboard', 
+      href: '/dashboard', 
+      icon: BarChart3, 
+      active: location.pathname === '/dashboard' 
+    },
+    { 
+      name: 'Clientes', 
+      href: '/clientes', 
+      icon: Users, 
+      active: location.pathname === '/clientes' 
+    },
+    { 
+      name: 'Profissionais', 
+      href: '/profissionais', 
+      icon: UserCheck, 
+      active: location.pathname === '/profissionais' 
+    },
+    { 
+      name: 'Serviços', 
+      href: '/servicos', 
+      icon: Scissors, 
+      active: location.pathname === '/servicos' 
+    },
+    { 
+      name: 'Agendamentos', 
+      href: '/agendamentos', 
+      icon: Calendar, 
+      active: location.pathname === '/agendamentos' 
+    },
+    { 
+      name: 'Estoque', 
+      href: '/estoque', 
+      icon: Package, 
+      active: location.pathname === '/estoque' 
+    },
+    { 
+      name: 'Financeiro', 
+      href: '/financeiro', 
+      icon: DollarSign, 
+      active: location.pathname === '/financeiro' 
+    },
+    { 
+      name: 'Configurações', 
+      href: '/configuracoes', 
+      icon: Settings, 
+      active: location.pathname === '/configuracoes' 
+    }
   ];
 
   const handleLogout = async () => {
@@ -65,17 +105,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <nav className="mt-4 sm:mt-6 pb-20 overflow-y-auto h-full">
           {menuItems.map((item) => (
             <button
-              key={item.path}
-              onClick={() => handleMenuClick(item.path)}
+              key={item.href}
+              onClick={() => handleMenuClick(item.href)}
               className={cn(
                 "w-full text-left px-4 sm:px-6 py-2 sm:py-3 flex items-center space-x-3 transition-colors text-sm sm:text-base",
-                location.pathname === item.path
+                location.pathname === item.href
                   ? "bg-pink-50 text-pink-600 border-r-2 border-pink-600"
                   : "text-gray-700 hover:bg-gray-50"
               )}
             >
               <span className="text-base sm:text-lg">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
+              <span className="font-medium">{item.name}</span>
             </button>
           ))}
           
