@@ -1,7 +1,9 @@
+
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useSupabase } from '@/hooks/useSupabase';
+import { AniversariantesDoDia } from '@/components/dashboard/AniversariantesDoDia';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -93,6 +95,9 @@ const Dashboard = () => {
             Bem-vindo de volta! Aqui está um resumo do seu negócio.
           </p>
         </div>
+
+        {/* Aniversariantes de Hoje - Nova seção no topo */}
+        <AniversariantesDoDia />
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
