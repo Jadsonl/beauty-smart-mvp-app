@@ -60,16 +60,20 @@ export const useProfile = () => {
     
     try {
       // Primeiro, verificar se o perfil já existe
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: selectError } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+
+      console.log('updateProfile: Perfil existente encontrado:', existingProfile);
+      console.log('updateProfile: Erro na busca:', selectError);
 
       let result;
       
       if (existingProfile) {
         // Atualizar perfil existente
+        console.log('updateProfile: Atualizando perfil existente');
         result = await supabase
           .from('profiles')
           .update({
@@ -80,8 +84,11 @@ export const useProfile = () => {
             address: profileData.address,
           })
           .eq('id', user.id);
+          
+        console.log('updateProfile: Resultado da atualização:', result);
       } else {
         // Criar novo perfil
+        console.log('updateProfile: Criando novo perfil');
         result = await supabase
           .from('profiles')
           .insert({
@@ -93,14 +100,16 @@ export const useProfile = () => {
             business_type: profileData.business_type,
             address: profileData.address,
           });
+          
+        console.log('updateProfile: Resultado da criação:', result);
       }
       
       if (result.error) {
-        console.error('updateProfile: Erro ao atualizar perfil:', result.error);
+        console.error('updateProfile: Erro ao salvar perfil:', result.error);
         return false;
       }
       
-      console.log('updateProfile: Perfil atualizado com sucesso');
+      console.log('updateProfile: Perfil salvo com sucesso');
       return true;
     } catch (error) {
       console.error('updateProfile: Erro inesperado:', error);

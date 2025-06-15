@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider } from "./hooks/useAuth";
+import { ThemeProvider } from "@/context/ThemeContext";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -28,71 +30,73 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <AppProvider>
-            <Toaster />
-            <Sonner />
-            <Router>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/clientes" element={
-                  <ProtectedRoute>
-                    <Clientes />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profissionais" element={
-                  <ProtectedRoute>
-                    <Profissionais />
-                  </ProtectedRoute>
-                } />
-                <Route path="/servicos" element={
-                  <ProtectedRoute>
-                    <Servicos />
-                  </ProtectedRoute>
-                } />
-                <Route path="/agendamentos" element={
-                  <ProtectedRoute>
-                    <Agendamentos />
-                  </ProtectedRoute>
-                } />
-                <Route path="/estoque" element={
-                  <ProtectedRoute>
-                    <Estoque />
-                  </ProtectedRoute>
-                } />
-                <Route path="/financeiro" element={
-                  <ProtectedRoute>
-                    <Financeiro />
-                  </ProtectedRoute>
-                } />
-                <Route path="/configuracoes" element={
-                  <ProtectedRoute>
-                    <Configuracoes />
-                  </ProtectedRoute>
-                } />
-                <Route path="/planos" element={
-                  <ProtectedRoute>
-                    <Planos />
-                  </ProtectedRoute>
-                } />
-                <Route path="/manage-subscription" element={
-                  <ProtectedRoute>
-                    <ManageSubscription />
-                  </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Router>
-          </AppProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppProvider>
+              <Toaster />
+              <Sonner />
+              <Router>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/clientes" element={
+                    <ProtectedRoute>
+                      <Clientes />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profissionais" element={
+                    <ProtectedRoute>
+                      <Profissionais />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/servicos" element={
+                    <ProtectedRoute>
+                      <Servicos />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/agendamentos" element={
+                    <ProtectedRoute>
+                      <Agendamentos />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/estoque" element={
+                    <ProtectedRoute>
+                      <Estoque />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/financeiro" element={
+                    <ProtectedRoute>
+                      <Financeiro />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/configuracoes" element={
+                    <ProtectedRoute>
+                      <Configuracoes />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/planos" element={
+                    <ProtectedRoute>
+                      <Planos />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/manage-subscription" element={
+                    <ProtectedRoute>
+                      <ManageSubscription />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Router>
+            </AppProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

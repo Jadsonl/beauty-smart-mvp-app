@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSupabase } from '@/hooks/useSupabase';
+import { useProfile } from '@/hooks/supabase/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { Save, User, Building } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Configuracoes = () => {
   const { user } = useAuth();
-  const { getProfile, updateProfile, loading } = useSupabase();
+  const { getProfile, updateProfile, loading } = useProfile();
   const [profile, setProfile] = useState({
     full_name: '',
     phone: '',
@@ -33,8 +33,10 @@ const Configuracoes = () => {
     
     setIsLoading(true);
     try {
+      console.log('Configuracoes: Carregando perfil para usuário:', user.id);
       const profileData = await getProfile();
       if (profileData) {
+        console.log('Configuracoes: Dados do perfil carregados:', profileData);
         setProfile({
           full_name: profileData.full_name || '',
           phone: profileData.phone || '',
@@ -42,8 +44,11 @@ const Configuracoes = () => {
           business_type: profileData.business_type || '',
           address: profileData.address || ''
         });
+      } else {
+        console.log('Configuracoes: Nenhum perfil encontrado, usando valores vazios');
       }
     } catch (error) {
+      console.error('Configuracoes: Erro ao carregar perfil:', error);
       toast.error('Erro ao carregar perfil');
     } finally {
       setIsLoading(false);
@@ -63,15 +68,19 @@ const Configuracoes = () => {
     }
 
     setIsSaving(true);
+    console.log('Configuracoes: Salvando perfil:', profile);
+    
     try {
       const success = await updateProfile(profile);
       if (success) {
         toast.success('Perfil atualizado com sucesso!');
+        // Recarregar o perfil para confirmar que foi salvo
+        await loadProfile();
       } else {
         toast.error('Erro ao atualizar perfil. Verifique os dados e tente novamente.');
       }
     } catch (error) {
-      console.error('Erro ao salvar alterações:', error);
+      console.error('Configuracoes: Erro ao salvar alterações:', error);
       toast.error('Erro inesperado ao salvar alterações');
     } finally {
       setIsSaving(false);
@@ -79,6 +88,7 @@ const Configuracoes = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
+    console.log('Configuracoes: Alterando campo:', field, 'para:', value);
     setProfile(prev => ({
       ...prev,
       [field]: value
@@ -90,7 +100,7 @@ const Configuracoes = () => {
       <Layout>
         <div className="space-y-6 p-4 sm:p-6">
           <div className="text-center py-8">
-            <p className="text-gray-600">Carregando configurações...</p>
+            <p className="text-gray-600 dark:text-gray-300">Carregando configurações...</p>
           </div>
         </div>
       </Layout>
@@ -101,9 +111,9 @@ const Configuracoes = () => {
     <Layout>
       <div className="space-y-6 p-4 sm:p-6">
         {/* Informações Pessoais */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white">
               <User className="h-5 w-5" />
               Informações Pessoais
             </CardTitle>
@@ -111,42 +121,45 @@ const Configuracoes = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="full_name">Nome Completo *</Label>
+                <Label htmlFor="full_name" className="dark:text-gray-200">Nome Completo *</Label>
                 <Input
                   id="full_name"
                   value={profile.full_name}
                   onChange={(e) => handleInputChange('full_name', e.target.value)}
                   placeholder="Seu nome completo"
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone" className="dark:text-gray-200">Telefone</Label>
                 <Input
                   id="phone"
                   value={profile.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="(11) 99999-9999"
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
             </div>
             
             <div>
-              <Label htmlFor="address">Endereço</Label>
+              <Label htmlFor="address" className="dark:text-gray-200">Endereço</Label>
               <Input
                 id="address"
                 value={profile.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder="Endereço completo do estabelecimento"
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Informações do Negócio */}
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 dark:text-white">
               <Building className="h-5 w-5" />
               Informações do Negócio
             </CardTitle>
@@ -154,31 +167,32 @@ const Configuracoes = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="business_name">Nome do Negócio</Label>
+                <Label htmlFor="business_name" className="dark:text-gray-200">Nome do Negócio</Label>
                 <Input
                   id="business_name"
                   value={profile.business_name}
                   onChange={(e) => handleInputChange('business_name', e.target.value)}
                   placeholder="Nome do seu salão/estabelecimento"
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
               <div>
-                <Label htmlFor="business_type">Tipo de Negócio</Label>
+                <Label htmlFor="business_type" className="dark:text-gray-200">Tipo de Negócio</Label>
                 <Select
                   value={profile.business_type}
                   onValueChange={(value) => handleInputChange('business_type', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="salao">Salão de Beleza</SelectItem>
-                    <SelectItem value="barbearia">Barbearia</SelectItem>
-                    <SelectItem value="estetica">Clínica de Estética</SelectItem>
-                    <SelectItem value="spa">Spa</SelectItem>
-                    <SelectItem value="manicure">Manicure/Pedicure</SelectItem>
-                    <SelectItem value="massagem">Massoterapia</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
+                  <SelectContent className="dark:bg-gray-700 dark:border-gray-600">
+                    <SelectItem value="salao" className="dark:text-white dark:hover:bg-gray-600">Salão de Beleza</SelectItem>
+                    <SelectItem value="barbearia" className="dark:text-white dark:hover:bg-gray-600">Barbearia</SelectItem>
+                    <SelectItem value="estetica" className="dark:text-white dark:hover:bg-gray-600">Clínica de Estética</SelectItem>
+                    <SelectItem value="spa" className="dark:text-white dark:hover:bg-gray-600">Spa</SelectItem>
+                    <SelectItem value="manicure" className="dark:text-white dark:hover:bg-gray-600">Manicure/Pedicure</SelectItem>
+                    <SelectItem value="massagem" className="dark:text-white dark:hover:bg-gray-600">Massoterapia</SelectItem>
+                    <SelectItem value="outro" className="dark:text-white dark:hover:bg-gray-600">Outro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -191,7 +205,7 @@ const Configuracoes = () => {
           <Button 
             onClick={handleSaveProfile}
             disabled={isSaving || loading}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? 'Salvando...' : 'Salvar Alterações'}
