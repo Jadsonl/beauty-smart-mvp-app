@@ -116,10 +116,12 @@ const Financeiro = () => {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.text('Transações Financeiras', 14, 15);
+
     const tableColumn = ['Tipo', 'Descrição', 'Data', 'Profissional', 'Valor'];
     const tableRows = filteredTransacoes.map((t) => {
       const profissional = profissionais.find((p) => p.id === t.professional_id);
       const professionalName = t.tipo === 'receita' && profissional ? profissional.name : 'Despesa';
+
       return [
         t.tipo === 'receita' ? 'Receita' : 'Despesa',
         t.descricao,
@@ -133,20 +135,56 @@ const Financeiro = () => {
     const total = filteredTransacoes.reduce((sum, t) =>
       t.tipo === 'receita' ? sum + t.valor : sum - t.valor, 0);
 
-    // Adicionar linha total ao final da tabela -- ALL VALUES MUST BE STRINGS!
+    // Linha total
     tableRows.push([
-      '', // Tipo
-      '', // Descrição
-      '', // Data
-      'Total', // Profissional
-      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toFixed(2)}` // Valor
+      '', '', '', 'Total',
+      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toFixed(2)}`
     ]);
 
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 22,
-      styles: { fontSize: 11 }
+      styles: { fontSize: 11 },
+      columnStyles: {
+        0: { cellWidth: 22 },    // Tipo
+        1: { cellWidth: 46 },    // Descrição
+        2: { cellWidth: 24 },    // Data
+        3: { cellWidth: 44 },    // Profissional
+        4: { cellWidth: 38, halign: 'right' }, // Valor (mais largo e alinhado à direita)
+      },
+      didParseCell: function (data) {
+        // Se for despesa E coluna == 'Valor', pinta de vermelho
+        if (
+          data.section === 'body'
+          && data.column.index === 4
+          && data.row.index < filteredTransacoes.length // linhas de transação, não a última de total
+        ) {
+          const transacao = filteredTransacoes[data.row.index];
+          if (transacao.tipo === 'despesa') {
+            data.cell.styles.textColor = [220, 38, 38]; // vermelho-600 do Tailwind
+          }
+        }
+        // Na célula de total (última linha)
+        if (
+          data.section === 'body'
+          && data.row.index === tableRows.length - 1 // ultima linha (total)
+          && data.column.index === 3 // coluna 'Total'
+        ) {
+          data.cell.styles.fontStyle = 'bold';
+        }
+        if (
+          data.section === 'body'
+          && data.row.index === tableRows.length - 1 // ultima linha (total)
+          && data.column.index === 4
+        ) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.textColor = [34, 197, 94]; // verde-500 do Tailwind para total positivo
+          if (total < 0) {
+            data.cell.styles.textColor = [220, 38, 38]; // vermelho-600 se total negativo
+          }
+        }
+      }
     });
     doc.save('transacoes_Financeiro.pdf');
   };
