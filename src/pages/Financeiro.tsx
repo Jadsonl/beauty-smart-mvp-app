@@ -15,6 +15,9 @@ import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationM
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { type Transacao } from '@/hooks/useSupabase';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const Financeiro = () => {
   const { 
@@ -110,6 +113,47 @@ const Financeiro = () => {
     }
   };
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Transações Financeiras', 14, 15);
+    const tableColumn = ['Tipo', 'Descrição', 'Data', 'Profissional', 'Valor'];
+    const tableRows = filteredTransacoes.map((t) => {
+      // Encontrar profissional
+      const profissional = profissionais.find((p) => p.id === t.professional_id);
+      const professionalName = t.tipo === 'receita' && profissional ? profissional.name : 'Despesa';
+      return [
+        t.tipo === 'receita' ? 'Receita' : 'Despesa',
+        t.descricao,
+        t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '',
+        professionalName,
+        (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
+      ];
+    });
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 22,
+    });
+    doc.save('transacoes_Financeiro.pdf');
+  };
+
+  const handleExportExcel = () => {
+    const data = filteredTransacoes.map((t) => {
+      const profissional = profissionais.find((p) => p.id === t.professional_id);
+      return {
+        Tipo: t.tipo === 'receita' ? 'Receita' : 'Despesa',
+        Descrição: t.descricao,
+        Data: t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '',
+        Profissional: t.tipo === 'receita' && profissional ? profissional.name : 'Despesa',
+        Valor: (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transacoes');
+    XLSX.writeFile(wb, 'transacoes_Financeiro.xlsx');
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -123,12 +167,20 @@ const Financeiro = () => {
   return (
     <Layout>
       <div className="container mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Financeiro</h1>
-          <Button onClick={handleAddLancamento} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Adicionar Lançamento
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
+              <span>Exportar PDF</span>
+            </Button>
+            <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
+              <span>Exportar Excel</span>
+            </Button>
+            <Button onClick={handleAddLancamento} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Adicionar Lançamento
+            </Button>
+          </div>
         </div>
 
         {/* Resumo Financeiro */}
