@@ -1,9 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff } from 'lucide-react';
@@ -12,11 +13,29 @@ import { supabase } from '@/integrations/supabase/client';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '', login: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+
+  // Carregar credenciais salvas ao inicializar o componente
+  useEffect(() => {
+    const savedCredentials = localStorage.getItem('belezaSmart_savedCredentials');
+    if (savedCredentials) {
+      try {
+        const { email: savedEmail, rememberMe: savedRememberMe } = JSON.parse(savedCredentials);
+        if (savedEmail && savedRememberMe) {
+          setEmail(savedEmail);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar credenciais salvas:', error);
+        localStorage.removeItem('belezaSmart_savedCredentials');
+      }
+    }
+  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,6 +55,19 @@ const Login = () => {
         sessionStorage.removeItem(key);
       }
     });
+  };
+
+  const saveCredentials = (email: string, remember: boolean) => {
+    if (remember) {
+      const credentialsToSave = {
+        email,
+        rememberMe: true,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem('belezaSmart_savedCredentials', JSON.stringify(credentialsToSave));
+    } else {
+      localStorage.removeItem('belezaSmart_savedCredentials');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,6 +121,10 @@ const Login = () => {
           setIsSubmitting(false);
         } else if (data && data.user) {
           console.log('Login bem-sucedido para usuário:', data.user.id, data.user.email);
+          
+          // Salvar credenciais se "Lembrar de mim" estiver marcado
+          saveCredentials(email, rememberMe);
+          
           // Navigation will happen automatically when user state changes
           navigate('/dashboard');
         } else {
@@ -159,6 +195,21 @@ const Login = () => {
               {errors.password && (
                 <p className="text-sm text-red-500">{errors.password}</p>
               )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="rememberMe"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                disabled={isSubmitting}
+              />
+              <Label 
+                htmlFor="rememberMe" 
+                className="text-sm font-normal cursor-pointer"
+              >
+                Lembrar de mim na próxima visita
+              </Label>
             </div>
 
             {errors.login && (
