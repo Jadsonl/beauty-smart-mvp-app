@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +16,13 @@ interface AgendamentoCardProps {
   onEdit: (agendamento: Agendamento) => void;
   onDelete: (agendamento: Agendamento) => void;
   onStatusChange: (agendamento: Agendamento, newStatus: string) => void;
+}
+
+// Função utilitária para formatar "YYYY-MM-DD" → "DD/MM/YYYY" sem UTC
+function formatDateFromYYYYMMDD(dateString: string): string {
+  const [year, month, day] = dateString.split("-");
+  if (!year || !month || !day) return dateString;
+  return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`;
 }
 
 export const AgendamentoCard: React.FC<AgendamentoCardProps> = ({
@@ -88,7 +94,10 @@ export const AgendamentoCard: React.FC<AgendamentoCardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <Calendar className="h-4 w-4 text-pink-600" />
-            <span>{format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR })}</span>
+            <span>
+              {/* Corrigir a exibição da data para não mostrar o dia anterior */}
+              {formatDateFromYYYYMMDD(agendamento.date)}
+            </span>
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <Clock className="h-4 w-4 text-pink-600" />
