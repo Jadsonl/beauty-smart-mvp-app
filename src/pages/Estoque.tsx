@@ -288,12 +288,12 @@ const Estoque = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-orange-800 text-sm sm:text-base truncate">{produto.name}</p>
                         <p className="text-xs sm:text-sm text-orange-600">
-                          Estoque atual: {inventarioProduto?.quantity || 0} {produto.unit}
+                          Estoque atual: {inventarioProduto?.quantity || 0} {produto.unit || ''}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs sm:text-sm text-orange-600">
-                          Mínimo: {produto.min_stock_level} {produto.unit}
+                          Mínimo: {produto.min_stock_level || 0} {produto.unit || ''}
                         </p>
                       </div>
                     </div>
@@ -378,14 +378,14 @@ const Estoque = () => {
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-600">Estoque:</span>
                           <span className={`font-medium ${isLowStock ? 'text-orange-600' : 'text-green-600'}`}>
-                            {inventarioProduto?.quantity || 0} {produto.unit}
+                            {inventarioProduto?.quantity || 0}{produto.unit ? ` ${produto.unit}` : ''}
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-gray-600">Mínimo:</span>
                           <span className="font-medium text-gray-900">
-                            {produto.min_stock_level} {produto.unit}
+                            {produto.min_stock_level || 0}{produto.unit ? ` ${produto.unit}` : ''}
                           </span>
                         </div>
                         
