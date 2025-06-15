@@ -25,6 +25,14 @@ interface FormFieldsProps {
   profissionais: Profissional[];
 }
 
+// Função auxiliar para converter Date em string YYYY-MM-DD de forma segura
+const formatDateToYYYYMMDD = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const FormFields: React.FC<FormFieldsProps> = ({
   formData,
   updateFormData,
@@ -45,9 +53,14 @@ export const FormFields: React.FC<FormFieldsProps> = ({
   };
 
   const handleDateSelect = (date: Date | undefined) => {
+    console.log('FormFields: Data recebida do DateTimeSelector:', date);
+    
     if (date) {
-      const formattedDate = date.toISOString().split('T')[0];
+      const formattedDate = formatDateToYYYYMMDD(date);
+      console.log('FormFields: Data formatada para formData:', formattedDate);
       updateFormData({ data: formattedDate });
+    } else {
+      updateFormData({ data: '' });
     }
   };
 

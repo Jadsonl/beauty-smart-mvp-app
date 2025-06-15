@@ -162,6 +162,17 @@ export const useAgendamentos = () => {
       return false;
     }
 
+    // Garantir que a data está no formato YYYY-MM-DD correto
+    console.log('useAgendamentos: Data recebida do formulário:', formData.data);
+    
+    // Validar formato da data
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(formData.data)) {
+      console.error('useAgendamentos: Formato de data inválido:', formData.data);
+      toast.error('Formato de data inválido');
+      return false;
+    }
+
     const agendamentoData = {
       client_name: cliente.nome,
       client_email: cliente.email || '',
@@ -170,13 +181,13 @@ export const useAgendamentos = () => {
       service_id: formData.servicoId,
       service_value_at_appointment: parseFloat(formData.servicoValor) || servico.preco,
       professional_id: formData.profissionalId && formData.profissionalId !== 'none' ? formData.profissionalId : undefined,
-      date: formData.data,
+      date: formData.data, // Usar diretamente a string YYYY-MM-DD
       time: formData.horario,
       status: 'scheduled' as const,
       notes: formData.observacoes
     };
 
-    console.log('useAgendamentos: Dados do agendamento preparados:', agendamentoData);
+    console.log('useAgendamentos: Dados do agendamento preparados (data final):', agendamentoData.date);
 
     let success = false;
 

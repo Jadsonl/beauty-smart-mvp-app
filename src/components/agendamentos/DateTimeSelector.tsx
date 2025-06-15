@@ -24,6 +24,26 @@ const timeSlots = [
   '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
 ];
 
+// Função auxiliar para converter Date em string YYYY-MM-DD de forma segura
+const formatDateToYYYYMMDD = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Função auxiliar para converter string YYYY-MM-DD em Date de forma segura
+const parseYYYYMMDDToDate = (dateString: string): Date | null => {
+  if (!dateString) return null;
+  
+  // Parse manual para evitar problemas de fuso horário
+  const [year, month, day] = dateString.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  
+  // Criar data no fuso horário local (não UTC)
+  return new Date(year, month - 1, day);
+};
+
 export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   data,
   horario,
@@ -31,6 +51,29 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   onHorarioChange
 }) => {
   console.log('DateTimeSelector: Renderizado com data =', data, 'horario =', horario);
+
+  // Converter string de data para objeto Date para o calendário
+  const selectedDate = data ? parseYYYYMMDDToDate(data) : undefined;
+  
+  console.log('DateTimeSelector: Data convertida para calendário:', selectedDate);
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    console.log('DateTimeSelector: Data selecionada pelo usuário:', selectedDate);
+    
+    if (selectedDate) {
+      // Converter para string YYYY-MM-DD de forma segura
+      const formattedDate = formatDateToYYYYMMDD(selectedDate);
+      console.log('DateTimeSelector: Data formatada para envio:', formattedDate);
+      
+      // Criar nova data com a string formatada para garantir consistência
+      const dateToSend = parseYYYYMMDDToDate(formattedDate);
+      console.log('DateTimeSelector: Data final para onDateSelect:', dateToSend);
+      
+      onDateSelect(dateToSend);
+    } else {
+      onDateSelect(undefined);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -47,8 +90,8 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {data ? (
-                format(new Date(data), "dd/MM/yyyy", { locale: ptBR })
+              {selectedDate ? (
+                format(selectedDate, "dd/MM/yyyy", { locale: ptBR })
               ) : (
                 <span>Selecione a data</span>
               )}
@@ -57,8 +100,8 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
           <PopoverContent className="w-auto p-0">
             <Calendar
               mode="single"
-              selected={data ? new Date(data) : undefined}
-              onSelect={onDateSelect}
+              selected={selectedDate}
+              onSelect={handleDateSelect}
               locale={ptBR}
               initialFocus
               className={cn("p-3 pointer-events-auto")}
