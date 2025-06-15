@@ -257,7 +257,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Notifications - Now includes birthday alerts */}
+        {/* Notifications */}
         <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl dark:text-white">
@@ -270,10 +270,10 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {/* Aniversariantes do Dia - Moved to Notifications */}
+              {/* Aniversariantes do Dia - Individual com WhatsApp */}
               {aniversariantesDoDia.length > 0 && (
                 <div className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
                     <span className="text-lg">🎉</span>
                     <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
                       Aniversariante{aniversariantesDoDia.length > 1 ? 's' : ''} de Hoje:
@@ -281,24 +281,25 @@ const Dashboard = () => {
                   </div>
                   <div className="space-y-2">
                     {aniversariantesDoDia.map((cliente) => (
-                      <div key={cliente.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded border border-orange-100 dark:border-orange-700">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-orange-900 dark:text-orange-100 truncate">
-                            🎂 {cliente.nome}
+                      <div key={cliente.id} className="bg-white dark:bg-gray-800 p-3 rounded border border-orange-100 dark:border-orange-700">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                          <p className="font-medium text-sm text-orange-900 dark:text-orange-100 flex items-center gap-1">
+                            <span className="text-lg">🎂</span>
+                            Feliz Aniversário, {cliente.nome}!
                           </p>
-                          <p className="text-xs text-orange-700 dark:text-orange-300">
-                            Hoje é aniversário!
-                          </p>
+                          <Button
+                            size="sm"
+                            onClick={() => handleWhatsAppClick(cliente)}
+                            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white flex items-center gap-1 text-xs px-2 py-1 w-full sm:w-auto"
+                            disabled={!cliente.telefone}
+                          >
+                            <MessageCircle className="h-3 w-3" />
+                            <span>Enviar WhatsApp</span>
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => handleWhatsAppClick(cliente)}
-                          className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white flex items-center gap-1 text-xs px-2 py-1 w-full sm:w-auto"
-                          disabled={!cliente.telefone}
-                        >
-                          <MessageCircle className="h-3 w-3" />
-                          <span>WhatsApp</span>
-                        </Button>
+                        <p className="text-xs text-orange-700 dark:text-orange-300">
+                          Hoje é aniversário! {!cliente.telefone && '(Telefone não cadastrado)'}
+                        </p>
                       </div>
                     ))}
                   </div>
