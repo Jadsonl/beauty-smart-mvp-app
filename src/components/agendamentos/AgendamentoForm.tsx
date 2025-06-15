@@ -51,37 +51,54 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     observacoes: ''
   });
 
+  console.log('AgendamentoForm renderizado:', {
+    isOpen,
+    formData,
+    clientes: clientes?.length || 0,
+    servicos: servicos?.length || 0,
+    profissionais: profissionais?.length || 0,
+    loading
+  });
+
   // Filter out any invalid data that could cause the Select.Item error
-  const validClientes = clientes.filter(cliente => 
+  const validClientes = clientes?.filter(cliente => 
     cliente && 
     cliente.id && 
     cliente.id.trim() !== '' && 
     cliente.nome && 
     cliente.nome.trim() !== ''
-  );
+  ) || [];
 
-  const validServicos = servicos.filter(servico => 
+  const validServicos = servicos?.filter(servico => 
     servico && 
     servico.id && 
     servico.id.trim() !== '' && 
     servico.nome && 
     servico.nome.trim() !== ''
-  );
+  ) || [];
 
-  const validProfissionais = profissionais.filter(profissional => 
+  const validProfissionais = profissionais?.filter(profissional => 
     profissional && 
     profissional.id && 
     profissional.id.trim() !== '' && 
     profissional.name && 
     profissional.name.trim() !== ''
-  );
+  ) || [];
+
+  console.log('Dados válidos:', {
+    validClientes: validClientes.length,
+    validServicos: validServicos.length,
+    validProfissionais: validProfissionais.length
+  });
 
   useEffect(() => {
+    console.log('useEffect disparado - editingAgendamento:', editingAgendamento);
+    
     if (editingAgendamento) {
       // Find client by name
       const cliente = validClientes.find(c => c.nome === editingAgendamento.client_name);
       
-      setFormData({
+      const newFormData = {
         clienteId: cliente?.id || '',
         servicoId: editingAgendamento.service_id || '',
         profissionalId: editingAgendamento.professional_id || '',
@@ -89,13 +106,17 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
         data: editingAgendamento.date,
         horario: editingAgendamento.time,
         observacoes: editingAgendamento.notes || ''
-      });
+      };
+      
+      console.log('Preenchendo formulário com dados de edição:', newFormData);
+      setFormData(newFormData);
     } else {
       resetForm();
     }
   }, [editingAgendamento, validClientes]);
 
   const resetForm = () => {
+    console.log('Resetando formulário');
     setFormData({
       clienteId: '',
       servicoId: '',
@@ -107,18 +128,57 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     });
   };
 
+  const handleClienteChange = (clienteId: string) => {
+    console.log('Cliente selecionado:', clienteId);
+    setFormData(prev => ({ ...prev, clienteId }));
+  };
+
   const handleServicoChange = (servicoId: string) => {
+    console.log('Serviço selecionado:', servicoId);
     setFormData(prev => ({ ...prev, servicoId }));
     
     // Pre-fill service value
     const servico = validServicos.find(s => s.id === servicoId);
     if (servico) {
+      console.log('Preenchendo valor do serviço:', servico.preco);
       setFormData(prev => ({ ...prev, servicoValor: servico.preco.toString() }));
+    }
+  };
+
+  const handleProfissionalChange = (profissionalId: string) => {
+    console.log('Profissional selecionado:', profissionalId);
+    setFormData(prev => ({ ...prev, profissionalId }));
+  };
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Valor alterado:', e.target.value);
+    setFormData(prev => ({ ...prev, servicoValor: e.target.value }));
+  };
+
+  const handleHorarioChange = (horario: string) => {
+    console.log('Horário selecionado:', horario);
+    setFormData(prev => ({ ...prev, horario }));
+  };
+
+  const handleObservacoesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Observações alteradas:', e.target.value);
+    setFormData(prev => ({ ...prev, observacoes: e.target.value }));
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const formattedDate = format(date, 'yyyy-MM-dd');
+      console.log('Data selecionada:', formattedDate);
+      setFormData(prev => ({ 
+        ...prev, 
+        data: formattedDate 
+      }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submetendo formulário:', formData);
     
     const success = await onSubmit(formData, editingAgendamento);
     if (success) {
@@ -128,9 +188,19 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
   };
 
   const handleClose = () => {
+    console.log('Fechando modal');
     resetForm();
     onClose();
   };
+
+  // Check if form is valid for submission
+  const isFormValid = formData.clienteId && formData.servicoId && formData.data && formData.horario;
+  console.log('Formulário válido:', isFormValid, {
+    clienteId: !!formData.clienteId,
+    servicoId: !!formData.servicoId,
+    data: !!formData.data,
+    horario: !!formData.horario
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -159,7 +229,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
             ) : (
               <Select 
                 value={formData.clienteId} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, clienteId: value }))}
+                onValueChange={handleClienteChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Escolha um cliente" />
@@ -210,7 +280,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
               step="0.01"
               placeholder="0,00"
               value={formData.servicoValor}
-              onChange={(e) => setFormData(prev => ({ ...prev, servicoValor: e.target.value }))}
+              onChange={handleValorChange}
             />
           </div>
 
@@ -218,7 +288,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
             <Label htmlFor="profissional">Profissional (Opcional)</Label>
             <Select 
               value={formData.profissionalId} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, profissionalId: value }))}
+              onValueChange={handleProfissionalChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Escolha um profissional" />
@@ -240,6 +310,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    type="button"
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal",
@@ -258,14 +329,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
                   <Calendar
                     mode="single"
                     selected={formData.data ? new Date(formData.data) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        setFormData(prev => ({ 
-                          ...prev, 
-                          data: format(date, 'yyyy-MM-dd') 
-                        }));
-                      }
-                    }}
+                    onSelect={handleDateSelect}
                     locale={ptBR}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
@@ -278,7 +342,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
               <Label htmlFor="horario">Horário</Label>
               <Select 
                 value={formData.horario} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, horario: value }))}
+                onValueChange={handleHorarioChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Horário" />
@@ -300,7 +364,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
               id="observacoes"
               placeholder="Observações adicionais"
               value={formData.observacoes}
-              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+              onChange={handleObservacoesChange}
             />
           </div>
 
@@ -316,7 +380,7 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
             <Button 
               type="submit" 
               className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-              disabled={validClientes.length === 0 || validServicos.length === 0 || !formData.clienteId || loading}
+              disabled={!isFormValid || loading}
             >
               {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
             </Button>
