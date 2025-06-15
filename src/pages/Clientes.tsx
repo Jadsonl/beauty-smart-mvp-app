@@ -12,6 +12,16 @@ import { useSupabase, type Cliente } from '@/hooks/useSupabase';
 import { Edit, Trash2, Phone, Mail, Calendar as CalendarBirthday } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Função para parse sem UTC do formato yyyy-MM-dd
+function parseDateLocal(dateStr: string): Date | null {
+  // Aceita formatos yyyy-MM-dd ou yyyy-MM-ddTHH:mm:ss...
+  if (!dateStr) return null;
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
 const Clientes = () => {
   const { getClientes, addCliente, updateCliente, deleteCliente, loading } = useSupabase();
   const { toast } = useToast();
@@ -61,7 +71,7 @@ const Clientes = () => {
         nome: cliente.nome,
         telefone: cliente.telefone || '',
         email: cliente.email || '',
-        date_of_birth: cliente.date_of_birth ? new Date(cliente.date_of_birth) : null
+        date_of_birth: cliente.date_of_birth ? parseDateLocal(cliente.date_of_birth) : null
       });
     } else {
       resetForm();
@@ -355,7 +365,15 @@ const Clientes = () => {
                         {cliente.date_of_birth && (
                           <div className="flex items-center space-x-2 text-sm text-gray-600">
                             <CalendarBirthday className="h-4 w-4" />
-                            <span>{format(new Date(cliente.date_of_birth), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                            <span>
+                              {/* Corrige para mostrar corretamente a data */}
+                              {(() => {
+                                const d = parseDateLocal(cliente.date_of_birth!);
+                                return d
+                                  ? format(d, 'dd/MM/yyyy', { locale: ptBR })
+                                  : '';
+                              })()}
+                            </span>
                           </div>
                         )}
                       </div>
