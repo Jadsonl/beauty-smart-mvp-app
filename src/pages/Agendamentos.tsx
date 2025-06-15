@@ -50,10 +50,8 @@ const Agendamentos = () => {
 
   const handleConfirmDelete = async () => {
     if (deleteAgendamento) {
-      const success = await handleDelete(deleteAgendamento.id);
-      if (success) {
-        handleCloseDeleteModal();
-      }
+      await handleDelete(deleteAgendamento);
+      handleCloseDeleteModal();
     }
   };
 
