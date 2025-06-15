@@ -13,7 +13,9 @@ interface ProductCardProps {
 
 export const ProductCard = ({ produto, inventario, onEdit, onDelete }: ProductCardProps) => {
   const inventarioProduto = inventario.find(inv => inv.product_id === produto.id);
-  const isLowStock = inventarioProduto && inventarioProduto.quantity <= (produto.min_stock_level || 0);
+  const quantidadeEstoque = inventarioProduto?.quantity || 0;
+  const estoqueMinimo = produto.min_stock_level || 0;
+  const isLowStock = quantidadeEstoque <= estoqueMinimo;
 
   return (
     <Card className={`${isLowStock ? 'border-orange-300' : 'border-gray-200'} relative`}>
@@ -56,14 +58,14 @@ export const ProductCard = ({ produto, inventario, onEdit, onDelete }: ProductCa
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600">Estoque:</span>
           <span className={`font-medium ${isLowStock ? 'text-orange-600' : 'text-green-600'}`}>
-            {inventarioProduto?.quantity || 0}{produto.unit ? ` ${produto.unit}` : ''}
+            {quantidadeEstoque}{produto.unit ? ` ${produto.unit}` : ''}
           </span>
         </div>
         
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600">Mínimo:</span>
           <span className="font-medium text-gray-900">
-            {produto.min_stock_level || 0}{produto.unit ? ` ${produto.unit}` : ''}
+            {estoqueMinimo}{produto.unit ? ` ${produto.unit}` : ''}
           </span>
         </div>
         

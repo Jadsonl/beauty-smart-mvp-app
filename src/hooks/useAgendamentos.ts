@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSupabase, type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
 import { toast } from 'sonner';
@@ -70,59 +71,55 @@ export const useAgendamentos = () => {
     loadData();
   }, [getAgendamentos, getClientes, getServicos, getProfissionais]);
 
-  const handleStatusChange = useCallback(async (agendamento: Agendamento, newStatus: string) => {
-    console.log('useAgendamentos: Alterando status:', agendamento.id, 'de', agendamento.status, 'para', newStatus);
+  const handleStatusChange = useCallback(async (agendamento: Agendamento, newStatusDisplay: string) => {
+    console.log('useAgendamentos: Alterando status:', agendamento.id, 'de', agendamento.status, 'para', newStatusDisplay);
     
     try {
-      // Verificar se o status é realmente diferente
-      if (agendamento.status === newStatus) {
-        console.log('useAgendamentos: Status já é', newStatus, '- sem necessidade de atualização');
-        return;
-      }
-
-      // Normalizar o status para garantir compatibilidade total
-      let validStatus: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
-      
-      // Mapeamento direto e robusto para evitar erros
+      // Mapeamento correto de status de exibição para valores do banco (em inglês)
       const statusMap: { [key: string]: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' } = {
+        'Agendado': 'scheduled',
         'agendado': 'scheduled',
         'scheduled': 'scheduled',
+        'Confirmado': 'confirmed',
         'confirmado': 'confirmed',
         'confirmed': 'confirmed',
+        'Concluído': 'completed',
+        'Concluido': 'completed',
         'concluído': 'completed',
         'concluido': 'completed',
         'completed': 'completed',
+        'Cancelado': 'cancelled',
         'cancelado': 'cancelled',
         'cancelled': 'cancelled'
       };
       
-      const normalizedInput = newStatus.toLowerCase().trim();
-      validStatus = statusMap[normalizedInput];
+      const dbStatus = statusMap[newStatusDisplay];
       
-      if (!validStatus) {
-        console.error('useAgendamentos: Status inválido:', newStatus, 'normalizado:', normalizedInput);
-        toast.error(`Status inválido: "${newStatus}"`);
+      if (!dbStatus) {
+        console.error('useAgendamentos: Status inválido:', newStatusDisplay);
+        toast.error(`Status inválido: "${newStatusDisplay}"`);
         return;
       }
 
-      // Preparar dados com apenas o campo necessário
-      const updateData = { 
-        status: validStatus
-      };
+      // Verificar se o status é realmente diferente
+      if (agendamento.status === dbStatus) {
+        console.log('useAgendamentos: Status já é', dbStatus, '- sem necessidade de atualização');
+        return;
+      }
+
+      console.log('useAgendamentos: Mapeando status:', newStatusDisplay, '->', dbStatus);
       
-      console.log('useAgendamentos: Dados para atualização:', updateData, 'Status final:', validStatus);
-      
-      const success = await updateAgendamento(agendamento.id, updateData);
+      const success = await updateAgendamento(agendamento.id, { status: dbStatus });
       
       if (success) {
-        toast.success(`Status alterado para "${validStatus}" com sucesso!`);
+        toast.success(`Status alterado para "${newStatusDisplay}" com sucesso!`);
         // Update local list immediately for better UX
         setAgendamentos(prev => prev.map(a => 
           a.id === agendamento.id 
-            ? { ...a, status: validStatus }
+            ? { ...a, status: dbStatus }
             : a
         ));
-        console.log('useAgendamentos: Status atualizado localmente para:', validStatus);
+        console.log('useAgendamentos: Status atualizado localmente para:', dbStatus);
       } else {
         console.error('useAgendamentos: Falha na atualização do status');
         toast.error('Erro ao atualizar status');
