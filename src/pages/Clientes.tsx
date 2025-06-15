@@ -26,6 +26,14 @@ const Clientes = () => {
     date_of_birth: null as Date | null
   });
 
+  // Adicione a função auxiliar segura para formatar a data sempre em local time (sem UTC):
+  const formatDateToYYYYMMDD = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // Carregar clientes do Supabase
   useEffect(() => {
     loadClientes();
@@ -105,7 +113,9 @@ const Clientes = () => {
         nome: formData.nome,
         telefone: formData.telefone,
         email: formData.email,
-        date_of_birth: formData.date_of_birth ? format(formData.date_of_birth, 'yyyy-MM-dd') : null
+        date_of_birth: formData.date_of_birth 
+          ? formatDateToYYYYMMDD(formData.date_of_birth) 
+          : null
       };
       
       if (editingCliente) {
