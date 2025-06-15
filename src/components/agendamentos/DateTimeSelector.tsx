@@ -13,7 +13,10 @@ import { cn } from "@/lib/utils";
 interface DateTimeSelectorProps {
   data: string;
   horario: string;
-  onDateSelect: (date: Date | undefined) => void;
+  /** 
+   * agora: Recebe YYYY-MM-DD ou undefined
+   */
+  onDateSelect: (date: string | undefined) => void;
   onHorarioChange: (horario: string) => void;
 }
 
@@ -26,7 +29,6 @@ const timeSlots = [
 
 // Função auxiliar para converter Date em string YYYY-MM-DD SEM FUSO (base local)
 const formatDateToYYYYMMDD = (date: Date): string => {
-  // Garante que não há deslocamento de fuso
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
@@ -50,13 +52,11 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   // Corrigir a seleção para sempre usar timezone local
   const selectedDate = data ? parseYYYYMMDDToDate(data) : undefined;
 
+  // Agora, ao selecionar uma data, já retorna string YYYY-MM-DD
   const handleDateSelect = (selected: Date | undefined) => {
     if (selected) {
-      // Força para sempre "YYYY-MM-DD" do horário local
       const formattedDate = formatDateToYYYYMMDD(selected);
-      // Chama parse de novo para garantir (pode ser redundante, mas mantém padrão em todo app)
-      const dateToSend = parseYYYYMMDDToDate(formattedDate);
-      onDateSelect(dateToSend || undefined);
+      onDateSelect(formattedDate); // --> sempre string
     } else {
       onDateSelect(undefined);
     }
