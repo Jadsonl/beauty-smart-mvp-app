@@ -5,11 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, Pencil } from 'lucide-react';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
+import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { type Transacao } from '@/hooks/useSupabase';
 
 const Financeiro = () => {
   const { 
@@ -19,10 +22,13 @@ const Financeiro = () => {
     setSelectedProfessionalId,
     serviceFilter,
     setServiceFilter,
-    loading 
+    loading,
+    handleUpdateTransacao
   } = useFinanceiro();
   
   const [searchFilter, setSearchFilter] = useState('');
+  const [editingTransacao, setEditingTransacao] = useState<Transacao | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const totalReceitas = transacoes
     .filter(t => t.tipo === 'receita')
@@ -47,6 +53,20 @@ const Financeiro = () => {
     
     return descricaoMatch || professionalMatch;
   });
+
+  const handleEditTransacao = (transacao: Transacao) => {
+    setEditingTransacao(transacao);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingTransacao(null);
+  };
+
+  const handleSaveTransacao = async (transacaoId: string, updatedData: Partial<Transacao>) => {
+    return await handleUpdateTransacao(transacaoId, updatedData);
+  };
 
   if (loading) {
     return (
@@ -173,7 +193,7 @@ const Financeiro = () => {
                   : 'Despesa';
 
                 return (
-                  <div key={transacao.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-2">
+                  <div key={transacao.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-2 hover:bg-gray-50">
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <Badge variant={transacao.tipo === 'receita' ? 'default' : 'destructive'}>
@@ -186,10 +206,20 @@ const Financeiro = () => {
                         <span className="font-medium text-gray-800">{professionalName}</span>
                       </div>
                     </div>
-                    <div className={`text-lg font-bold ${
-                      transacao.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
-                    } text-right`}>
-                      {transacao.tipo === 'receita' ? '+' : '-'} R$ {transacao.valor.toFixed(2)}
+                    <div className="flex items-center gap-2">
+                      <div className={`text-lg font-bold ${
+                        transacao.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transacao.tipo === 'receita' ? '+' : '-'} R$ {transacao.valor.toFixed(2)}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTransacao(transacao)}
+                        className="ml-2"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 );
@@ -197,6 +227,16 @@ const Financeiro = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Modal de Edição */}
+        <TransacaoEditModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          transacao={editingTransacao}
+          profissionais={profissionais}
+          onSave={handleSaveTransacao}
+          loading={loading}
+        />
       </div>
     </Layout>
   );

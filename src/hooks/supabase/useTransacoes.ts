@@ -108,10 +108,13 @@ export const useTransacoes = () => {
 
   const updateTransacao = useCallback(async (id: string, transacaoData: Partial<Transacao>): Promise<boolean> => {
     if (!user?.id) {
+      console.warn('updateTransacao: Usuário não autenticado');
       return false;
     }
 
     setLoading(true);
+    console.log('updateTransacao: Atualizando transação:', id, 'dados:', transacaoData);
+    
     try {
       const { error } = await supabase
         .from('transactions')
@@ -119,17 +122,21 @@ export const useTransacoes = () => {
           tipo: transacaoData.tipo,
           descricao: transacaoData.descricao,
           valor: transacaoData.valor,
-          data: transacaoData.data
+          data: transacaoData.data,
+          professional_id: transacaoData.professional_id
         })
         .eq('id', id)
         .eq('user_id', user.id);
 
       if (error) {
+        console.error('updateTransacao: Erro ao atualizar transação:', error);
         return false;
       }
 
+      console.log('updateTransacao: Transação atualizada com sucesso');
       return true;
     } catch (error) {
+      console.error('updateTransacao: Erro inesperado:', error);
       return false;
     } finally {
       setLoading(false);

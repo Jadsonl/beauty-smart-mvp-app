@@ -85,16 +85,18 @@ export const useFinanceiro = () => {
     const success = await updateTransacao(id, transacaoData);
     if (success) {
       toast.success('Transação atualizada com sucesso!');
-      // Update local list
-      setTransacoes(prev => prev.map(t => 
-        t.id === id ? { ...t, ...transacaoData } : t
-      ));
+      // Recarregar transações para manter consistência
+      const filters = {
+        professionalId: selectedProfessionalId
+      };
+      const transacoesData = await getTransacoes(filters);
+      setTransacoes(transacoesData || []);
     } else {
       toast.error('Erro ao atualizar transação');
     }
     
     return success;
-  }, [updateTransacao]);
+  }, [updateTransacao, getTransacoes, selectedProfessionalId]);
 
   return {
     transacoes,
