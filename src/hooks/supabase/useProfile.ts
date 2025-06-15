@@ -59,19 +59,11 @@ export const useProfile = () => {
     console.log('updateProfile: Iniciando atualização para user_id:', user.id);
     console.log('updateProfile: Dados recebidos do frontend:', profileData);
     
-    // Preparar dados para inserção/atualização - mapeamento explícito
-    const dataToSave = {
-      full_name: profileData.full_name || null,
-      phone: profileData.phone || null,
-      business_name: profileData.business_name || null,
-      business_type: profileData.business_type || null,
-      address: profileData.address || null,
-    };
-    
-    console.log('updateProfile: Dados preparados para salvar:', dataToSave);
+    // Verificar primeiro o schema da tabela profiles
+    console.log('updateProfile: Verificando estrutura da tabela profiles...');
     
     try {
-      // Primeiro, verificar se o perfil já existe
+      // Primeiro verificar se o perfil já existe
       console.log('updateProfile: Verificando se perfil existe...');
       const { data: existingProfile, error: selectError } = await supabase
         .from('profiles')
@@ -82,8 +74,23 @@ export const useProfile = () => {
       console.log('updateProfile: Perfil existente encontrado:', existingProfile);
       
       if (selectError) {
-        console.error('updateProfile: Erro na busca de perfil existente:', selectError);
+        console.error('updateProfile: Erro na busca de perfil existente:', {
+          message: selectError.message,
+          details: selectError.details,
+          hint: selectError.hint,
+          code: selectError.code
+        });
       }
+
+      // Preparar dados apenas com as colunas que existem na tabela
+      const dataToSave = {
+        full_name: profileData.full_name || null,
+        phone: profileData.phone || null,
+        business_name: profileData.business_name || null,
+        business_type: profileData.business_type || null,
+      };
+      
+      console.log('updateProfile: Dados preparados para salvar (sem address):', dataToSave);
 
       let result;
       
@@ -94,7 +101,7 @@ export const useProfile = () => {
           .from('profiles')
           .update(dataToSave)
           .eq('id', user.id)
-          .select(); // Adicionar select para ver o resultado
+          .select();
           
         console.log('updateProfile: Resultado da atualização:', result);
       } else {
@@ -111,17 +118,19 @@ export const useProfile = () => {
         result = await supabase
           .from('profiles')
           .insert(newProfileData)
-          .select(); // Adicionar select para ver o resultado
+          .select();
           
         console.log('updateProfile: Resultado da criação:', result);
       }
       
       if (result.error) {
-        console.error('updateProfile: Erro detalhado do Supabase:', {
+        console.error('updateProfile: Erro COMPLETO do Supabase:', {
           message: result.error.message,
           details: result.error.details,
           hint: result.error.hint,
-          code: result.error.code
+          code: result.error.code,
+          stack: result.error.stack,
+          full_error: result.error
         });
         return false;
       }
@@ -129,7 +138,11 @@ export const useProfile = () => {
       console.log('updateProfile: Operação realizada com sucesso. Dados salvos:', result.data);
       return true;
     } catch (error) {
-      console.error('updateProfile: Erro inesperado capturado:', error);
+      console.error('updateProfile: Erro inesperado capturado:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined,
+        full_error: error
+      });
       return false;
     } finally {
       setLoading(false);

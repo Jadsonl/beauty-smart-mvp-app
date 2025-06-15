@@ -50,6 +50,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           </div>
         </div>
         
+        {/* Temporariamente removendo o campo de endereço para teste
         <div>
           <Label htmlFor="address" className="dark:text-gray-200">Endereço</Label>
           <Input
@@ -60,6 +61,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
         </div>
+        */}
       </CardContent>
     </Card>
   );
