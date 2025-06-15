@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 import { useSupabase, type Cliente } from '@/hooks/useSupabase';
 import { Edit, Trash2, Phone, Mail, Calendar as CalendarBirthday } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -239,29 +235,11 @@ const Clientes = () => {
 
                 <div className="space-y-2">
                   <Label>Data de Nascimento</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.date_of_birth && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date_of_birth ? format(formData.date_of_birth, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data de nascimento"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.date_of_birth || undefined}
-                        onSelect={(date) => setFormData(prev => ({ ...prev, date_of_birth: date || null }))}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DatePicker
+                    date={formData.date_of_birth}
+                    onSelect={(date) => setFormData(prev => ({ ...prev, date_of_birth: date || null }))}
+                    placeholder="Selecione a data de nascimento"
+                  />
                 </div>
 
                 <div className="flex justify-end space-x-2 pt-4">
