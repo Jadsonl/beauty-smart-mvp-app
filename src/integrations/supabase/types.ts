@@ -105,6 +105,36 @@ export type Database = {
         }
         Relationships: []
       }
+      confirmation_tokens: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_inventory: {
         Row: {
           cost_per_unit: number | null
@@ -345,7 +375,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

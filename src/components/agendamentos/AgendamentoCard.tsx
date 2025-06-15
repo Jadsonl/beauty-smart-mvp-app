@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Mail, Phone, User, Edit, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Mail, Phone, User, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { type Agendamento, type Servico, type Profissional } from '@/hooks/useSupabase';
+import { useWhatsAppConfirmation } from '@/hooks/useWhatsAppConfirmation';
 
 interface AgendamentoCardProps {
   agendamento: Agendamento;
@@ -26,6 +27,8 @@ export const AgendamentoCard: React.FC<AgendamentoCardProps> = ({
   onDelete,
   onStatusChange
 }) => {
+  const { sendWhatsAppConfirmation, loading: whatsappLoading } = useWhatsAppConfirmation();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
@@ -58,6 +61,10 @@ export const AgendamentoCard: React.FC<AgendamentoCardProps> = ({
 
   const servico = servicos.find(s => s.id === agendamento.service_id);
   const profissional = profissionais.find(p => p.id === agendamento.professional_id);
+
+  const handleWhatsAppConfirmation = () => {
+    sendWhatsAppConfirmation(agendamento);
+  };
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -135,6 +142,18 @@ export const AgendamentoCard: React.FC<AgendamentoCardProps> = ({
           </div>
           
           <div className="flex gap-2">
+            {agendamento.status === 'scheduled' && agendamento.client_phone && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleWhatsAppConfirmation}
+                disabled={whatsappLoading}
+                className="flex items-center gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">WhatsApp</span>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
