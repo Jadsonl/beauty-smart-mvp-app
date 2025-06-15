@@ -119,7 +119,6 @@ const Financeiro = () => {
 
     const tableColumn = ['Tipo', 'Descrição', 'Data', 'Profissional', 'Valor'];
     const tableRows = filteredTransacoes.map((t) => {
-      // SE for receita E tem profissional válido, mostra nome, caso contrário, string vazia
       const profissional = profissionais.find((p) => p.id === t.professional_id);
       const showProfessional = t.tipo === 'receita' && profissional && profissional.id !== '' && profissional.name !== '';
       const professionalName = showProfessional ? profissional.name : '';
@@ -129,7 +128,7 @@ const Financeiro = () => {
         t.descricao,
         t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '',
         professionalName,
-        (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
+        (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
       ];
     });
 
@@ -140,7 +139,7 @@ const Financeiro = () => {
     // Linha total
     tableRows.push([
       '', '', '', 'Total',
-      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toFixed(2)}`
+      `${total >= 0 ? '+' : '-'} R$ ${Math.abs(total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     ]);
 
     autoTable(doc, {
@@ -202,7 +201,7 @@ const Financeiro = () => {
         Descrição: t.descricao,
         Data: t.data ? new Date(t.data).toLocaleDateString('pt-BR') : '',
         Profissional: professionalName,
-        Valor: (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toFixed(2),
+        Valor: (t.tipo === 'receita' ? '+' : '-') + ' R$ ' + t.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
       };
     });
 
@@ -216,7 +215,7 @@ const Financeiro = () => {
       Descrição: '',
       Data: '',
       Profissional: 'Total',
-      Valor: (total >= 0 ? '+' : '-') + ` R$ ${Math.abs(total).toFixed(2)}`
+      Valor: (total >= 0 ? '+' : '-') + ` R$ ${Math.abs(total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     });
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -262,7 +261,7 @@ const Financeiro = () => {
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold text-green-600">
-                R$ {totalReceitas.toFixed(2)}
+                R$ {totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
@@ -273,7 +272,7 @@ const Financeiro = () => {
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold text-red-600">
-                R$ {totalDespesas.toFixed(2)}
+                R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
@@ -284,7 +283,7 @@ const Financeiro = () => {
             </CardHeader>
             <CardContent>
               <div className={`text-xl sm:text-2xl font-bold ${saldoTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                R$ {saldoTotal.toFixed(2)}
+                R$ {saldoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
@@ -365,9 +364,7 @@ const Financeiro = () => {
           <CardContent>
             <div className="space-y-4">
               {filteredTransacoes.map((transacao) => {
-                // Find professional name for this transaction
                 const professional = profissionais.find(p => p.id === transacao.professional_id);
-                // NOVO: lógica para mostrar vazio quando for despesa ou não tem professional válido
                 const showProfessional = transacao.tipo === 'receita' && professional && professional.id !== '' && professional.name !== '';
                 const professionalName = showProfessional ? professional.name : '';
 
@@ -390,7 +387,7 @@ const Financeiro = () => {
                       <div className={`text-lg font-bold ${
                         transacao.tipo === 'receita' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {transacao.tipo === 'receita' ? '+' : '-'} R$ {transacao.valor.toFixed(2)}
+                        {transacao.tipo === 'receita' ? '+' : '-'} R$ {transacao.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                       <Button
                         variant="outline"
