@@ -39,6 +39,7 @@ export interface Transacao {
   valor: number;
   data: string;
   agendamento_id?: string;
+  professional_id?: string; // Nova propriedade para filtro por profissional
   created_at?: string;
 }
 
@@ -474,22 +475,28 @@ export const useSupabase = () => {
     }
   }, [user]);
 
-  // TRANSAÇÕES - usando useCallback
-  const getTransacoes = useCallback(async (): Promise<Transacao[]> => {
+  // TRANSAÇÕES - atualizado para suportar filtro por profissional
+  const getTransacoes = useCallback(async (professionalId?: string): Promise<Transacao[]> => {
     if (!user?.id) {
       console.warn('getTransacoes: Usuário não autenticado. Não será possível carregar transações.');
       return [];
     }
     
     setLoading(true);
-    console.log('getTransacoes: Iniciando busca para user_id:', user.id);
+    console.log('getTransacoes: Iniciando busca para user_id:', user.id, 'professional_id:', professionalId);
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('*')
-        .eq('user_id', user.id)
-        .order('data', { ascending: false });
+        .eq('user_id', user.id);
+      
+      // Adicionar filtro por profissional se especificado
+      if (professionalId && professionalId !== 'all') {
+        query = query.eq('professional_id', professionalId);
+      }
+      
+      const { data, error } = await query.order('data', { ascending: false });
       
       if (error) {
         console.error('getTransacoes: Erro ao buscar transações:', error);
@@ -506,6 +513,7 @@ export const useSupabase = () => {
         valor: item.valor,
         data: item.data,
         agendamento_id: item.agendamento_id,
+        professional_id: item.professional_id,
         created_at: item.created_at
       }));
       
@@ -1034,7 +1042,7 @@ export const useSupabase = () => {
     updateProfissional,
     deleteProfissional,
     // Transações
-    getTransacoes,
+    getTransacoes, // Atualizado para suportar filtro por profissional
     addTransacao,
     updateTransacao,
     // Agendamentos

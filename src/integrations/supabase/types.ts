@@ -300,6 +300,7 @@ export type Database = {
           data: string
           descricao: string
           id: string
+          professional_id: string | null
           tipo: string
           user_id: string
           valor: number
@@ -310,6 +311,7 @@ export type Database = {
           data: string
           descricao: string
           id?: string
+          professional_id?: string | null
           tipo: string
           user_id: string
           valor: number
@@ -320,11 +322,20 @@ export type Database = {
           data?: string
           descricao?: string
           id?: string
+          professional_id?: string | null
           tipo?: string
           user_id?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

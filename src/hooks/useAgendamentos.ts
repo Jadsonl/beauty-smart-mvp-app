@@ -72,19 +72,40 @@ export const useAgendamentos = () => {
   }, [getAgendamentos, getClientes, getServicos, getProfissionais]);
 
   const handleStatusChange = useCallback(async (agendamento: Agendamento, newStatus: string) => {
-    console.log('useAgendamentos: Alterando status:', agendamento.id, newStatus);
+    console.log('useAgendamentos: Alterando status:', agendamento.id, 'de', agendamento.status, 'para', newStatus);
     
-    const success = await updateAgendamento(agendamento.id, { status: newStatus as any });
-    if (success) {
-      toast.success('Status atualizado com sucesso!');
-      // Update local list
-      setAgendamentos(prev => prev.map(a => 
-        a.id === agendamento.id 
-          ? { ...a, status: newStatus as any }
-          : a
-      ));
-    } else {
-      toast.error('Erro ao atualizar status');
+    try {
+      // Verificar se o status é realmente diferente
+      if (agendamento.status === newStatus) {
+        console.log('useAgendamentos: Status já é', newStatus, '- sem necessidade de atualização');
+        return;
+      }
+
+      // Preparar dados com apenas o campo necessário
+      const updateData = { 
+        status: newStatus as 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
+      };
+      
+      console.log('useAgendamentos: Dados para atualização:', updateData);
+      
+      const success = await updateAgendamento(agendamento.id, updateData);
+      
+      if (success) {
+        toast.success(`Status alterado para "${newStatus}" com sucesso!`);
+        // Update local list immediately for better UX
+        setAgendamentos(prev => prev.map(a => 
+          a.id === agendamento.id 
+            ? { ...a, status: newStatus as any }
+            : a
+        ));
+        console.log('useAgendamentos: Status atualizado localmente');
+      } else {
+        console.error('useAgendamentos: Falha na atualização do status');
+        toast.error('Erro ao atualizar status');
+      }
+    } catch (error) {
+      console.error('useAgendamentos: Erro inesperado ao alterar status:', error);
+      toast.error('Erro inesperado ao atualizar status');
     }
   }, [updateAgendamento]);
 
