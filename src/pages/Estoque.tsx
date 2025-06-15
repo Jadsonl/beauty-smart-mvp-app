@@ -79,10 +79,35 @@ const Estoque = () => {
   };
 
   const handleProductSaved = async () => {
-    // Recarregar dados após salvar
-    const updatedProdutos = await getProdutos();
+    // Recarregar produtos E inventário após salvar/editar
+    const [updatedProdutos, updatedInventario] = await Promise.all([
+      getProdutos(),
+      getInventory()
+    ]);
     setProdutos(updatedProdutos);
+    setInventario(updatedInventario);
     setEditingProduct(null);
+  };
+
+  const handleUpdateInventory = async (productId: string, quantity: number) => {
+    const inv = inventario.find((item) => item.product_id === productId);
+    const { supabase } = await import('@/integrations/supabase/client');
+    if (inv) {
+      // Atualizar existente
+      await supabase
+        .from('product_inventory')
+        .update({ quantity })
+        .eq('id', inv.id);
+    } else {
+      // Se não existe, criar inventário para o produto
+      await supabase
+        .from('product_inventory')
+        .insert({
+          user_id: user?.id,
+          product_id: productId,
+          quantity,
+        });
+    }
   };
 
   const closeDialog = () => {
@@ -93,19 +118,6 @@ const Estoque = () => {
   const openAddDialog = () => {
     setEditingProduct(null);
     setIsDialogOpen(true);
-  };
-
-  const handleUpdateInventory = async (productId: string, quantity: number) => {
-    const inv = inventario.find((item) => item.product_id === productId);
-    if (inv) {
-      // Atualizar existente
-      const { supabase } = await import('@/integrations/supabase/client'); // import dinâmico
-      await supabase
-        .from('product_inventory')
-        .update({ quantity }) // só atualiza a quantidade
-        .eq('id', inv.id);
-    }
-    // Caso não exista inventário, não faz nada.
   };
 
   if (loading) {
