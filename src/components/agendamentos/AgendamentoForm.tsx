@@ -1,15 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { format } from 'date-fns';
 import { type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
-import { ClientSelector } from './ClientSelector';
-import { ServiceSelector } from './ServiceSelector';
-import { ProfessionalSelector } from './ProfessionalSelector';
-import { DateTimeSelector } from './DateTimeSelector';
+import { FormHeader } from './FormHeader';
+import { LoadingState } from './LoadingState';
+import { FormFields } from './FormFields';
+import { FormActions } from './FormActions';
 
 interface AgendamentoFormProps {
   isOpen: boolean;
@@ -90,52 +85,9 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     });
   };
 
-  const handleClienteChange = (clienteId: string) => {
-    console.log('Cliente selecionado:', clienteId);
-    setFormData(prev => ({ ...prev, clienteId }));
-  };
-
-  const handleServicoChange = (servicoId: string) => {
-    console.log('Serviço selecionado:', servicoId);
-    setFormData(prev => ({ ...prev, servicoId }));
-    
-    // Pre-fill service value
-    const servico = servicos.find(s => s.id === servicoId);
-    if (servico) {
-      console.log('Preenchendo valor do serviço:', servico.preco);
-      setFormData(prev => ({ ...prev, servicoValor: servico.preco.toString() }));
-    }
-  };
-
-  const handleProfissionalChange = (profissionalId: string) => {
-    console.log('Profissional selecionado:', profissionalId);
-    setFormData(prev => ({ ...prev, profissionalId }));
-  };
-
-  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Valor alterado:', e.target.value);
-    setFormData(prev => ({ ...prev, servicoValor: e.target.value }));
-  };
-
-  const handleHorarioChange = (horario: string) => {
-    console.log('Horário selecionado:', horario);
-    setFormData(prev => ({ ...prev, horario }));
-  };
-
-  const handleObservacoesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Observações alteradas:', e.target.value);
-    setFormData(prev => ({ ...prev, observacoes: e.target.value }));
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      console.log('Data selecionada:', formattedDate);
-      setFormData(prev => ({ 
-        ...prev, 
-        data: formattedDate 
-      }));
-    }
+  const updateFormData = (updates: Partial<typeof formData>) => {
+    console.log('Atualizando formData:', updates);
+    setFormData(prev => ({ ...prev, ...updates }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,92 +128,33 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
 
   // Show loading state if data is still being fetched
   if (!clientes || !servicos || !profissionais) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Carregando dados...</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
+    return <LoadingState isOpen={isOpen} onClose={onClose} />;
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">
-            {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            {editingAgendamento 
-              ? 'Edite as informações do agendamento.' 
-              : 'Preencha os dados para criar um novo agendamento.'
-            }
-          </DialogDescription>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <ClientSelector
-            value={formData.clienteId}
-            onChange={handleClienteChange}
-            clientes={clientes}
-          />
+    <div>
+      <FormHeader 
+        isOpen={isOpen}
+        onClose={onClose}
+        editingAgendamento={editingAgendamento}
+      />
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormFields
+          formData={formData}
+          updateFormData={updateFormData}
+          clientes={clientes}
+          servicos={servicos}
+          profissionais={profissionais}
+        />
 
-          <ServiceSelector
-            servicoId={formData.servicoId}
-            servicoValor={formData.servicoValor}
-            onServicoChange={handleServicoChange}
-            onValorChange={handleValorChange}
-            servicos={servicos}
-          />
-
-          <ProfessionalSelector
-            value={formData.profissionalId}
-            onChange={handleProfissionalChange}
-            profissionais={profissionais}
-          />
-
-          <DateTimeSelector
-            data={formData.data}
-            horario={formData.horario}
-            onDateSelect={handleDateSelect}
-            onHorarioChange={handleHorarioChange}
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações (Opcional)</Label>
-            <Input
-              id="observacoes"
-              placeholder="Observações adicionais"
-              value={formData.observacoes}
-              onChange={handleObservacoesChange}
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleClose}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              className="bg-pink-600 hover:bg-pink-700 w-full sm:w-auto"
-              disabled={!isFormValid || loading}
-            >
-              {editingAgendamento ? 'Salvar Alterações' : 'Salvar Agendamento'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <FormActions
+          isFormValid={isFormValid}
+          loading={loading}
+          editingAgendamento={editingAgendamento}
+          onClose={handleClose}
+        />
+      </form>
+    </div>
   );
 };

@@ -15,18 +15,23 @@ export interface Transacao {
   created_at?: string;
 }
 
+interface TransacaoFilters {
+  professionalId?: string;
+  serviceFilter?: string;
+}
+
 export const useTransacoes = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const getTransacoes = useCallback(async (professionalId?: string): Promise<Transacao[]> => {
+  const getTransacoes = useCallback(async (filters: TransacaoFilters = {}): Promise<Transacao[]> => {
     if (!user?.id) {
       console.warn('getTransacoes: Usuário não autenticado. Não será possível carregar transações.');
       return [];
     }
     
     setLoading(true);
-    console.log('getTransacoes: Iniciando busca para user_id:', user.id, 'professional_id:', professionalId);
+    console.log('getTransacoes: Iniciando busca para user_id:', user.id, 'filtros:', filters);
     
     try {
       let query = supabase
@@ -35,8 +40,13 @@ export const useTransacoes = () => {
         .eq('user_id', user.id);
       
       // Adicionar filtro por profissional se especificado
-      if (professionalId && professionalId !== 'all') {
-        query = query.eq('professional_id', professionalId);
+      if (filters.professionalId && filters.professionalId !== 'all') {
+        query = query.eq('professional_id', filters.professionalId);
+      }
+      
+      // Adicionar filtro por serviço se especificado
+      if (filters.serviceFilter && filters.serviceFilter.trim() !== '') {
+        query = query.ilike('descricao', `%${filters.serviceFilter.trim()}%`);
       }
       
       const { data, error } = await query.order('data', { ascending: false });

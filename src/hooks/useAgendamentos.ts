@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useSupabase, type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
 import { toast } from 'sonner';
@@ -81,31 +80,29 @@ export const useAgendamentos = () => {
         return;
       }
 
-      // Normalizar o status para evitar erros de case-sensitivity
-      const normalizedStatus = newStatus.toLowerCase();
+      // Normalizar o status para garantir compatibilidade total
       let validStatus: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
       
-      switch (normalizedStatus) {
-        case 'agendado':
-        case 'scheduled':
-          validStatus = 'scheduled';
-          break;
-        case 'confirmado':
-        case 'confirmed':
-          validStatus = 'confirmed';
-          break;
-        case 'concluído':
-        case 'completed':
-          validStatus = 'completed';
-          break;
-        case 'cancelado':
-        case 'cancelled':
-          validStatus = 'cancelled';
-          break;
-        default:
-          console.error('useAgendamentos: Status inválido:', newStatus);
-          toast.error('Status inválido');
-          return;
+      // Mapeamento direto e robusto para evitar erros
+      const statusMap: { [key: string]: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' } = {
+        'agendado': 'scheduled',
+        'scheduled': 'scheduled',
+        'confirmado': 'confirmed',
+        'confirmed': 'confirmed',
+        'concluído': 'completed',
+        'concluido': 'completed',
+        'completed': 'completed',
+        'cancelado': 'cancelled',
+        'cancelled': 'cancelled'
+      };
+      
+      const normalizedInput = newStatus.toLowerCase().trim();
+      validStatus = statusMap[normalizedInput];
+      
+      if (!validStatus) {
+        console.error('useAgendamentos: Status inválido:', newStatus, 'normalizado:', normalizedInput);
+        toast.error(`Status inválido: "${newStatus}"`);
+        return;
       }
 
       // Preparar dados com apenas o campo necessário
@@ -113,7 +110,7 @@ export const useAgendamentos = () => {
         status: validStatus
       };
       
-      console.log('useAgendamentos: Dados para atualização:', updateData);
+      console.log('useAgendamentos: Dados para atualização:', updateData, 'Status final:', validStatus);
       
       const success = await updateAgendamento(agendamento.id, updateData);
       
@@ -125,7 +122,7 @@ export const useAgendamentos = () => {
             ? { ...a, status: validStatus }
             : a
         ));
-        console.log('useAgendamentos: Status atualizado localmente');
+        console.log('useAgendamentos: Status atualizado localmente para:', validStatus);
       } else {
         console.error('useAgendamentos: Falha na atualização do status');
         toast.error('Erro ao atualizar status');

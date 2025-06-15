@@ -15,6 +15,7 @@ export const useFinanceiro = () => {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all');
+  const [serviceFilter, setServiceFilter] = useState<string>('');
 
   // Carregar profissionais
   useEffect(() => {
@@ -37,12 +38,19 @@ export const useFinanceiro = () => {
     loadProfissionais();
   }, [getProfissionais]);
 
-  // Carregar transações (recarrega quando o filtro de profissional muda)
+  // Carregar transações (recarrega quando os filtros mudam)
   useEffect(() => {
     const loadTransacoes = async () => {
-      console.log('useFinanceiro: Carregando transações para profissional:', selectedProfessionalId);
+      console.log('useFinanceiro: Carregando transações com filtros:', {
+        professionalId: selectedProfessionalId,
+        serviceFilter
+      });
       try {
-        const transacoesData = await getTransacoes(selectedProfessionalId);
+        const filters = {
+          professionalId: selectedProfessionalId,
+          serviceFilter: serviceFilter
+        };
+        const transacoesData = await getTransacoes(filters);
         setTransacoes(transacoesData || []);
         console.log('useFinanceiro: Transações carregadas:', transacoesData?.length || 0);
       } catch (error) {
@@ -52,7 +60,7 @@ export const useFinanceiro = () => {
     };
 
     loadTransacoes();
-  }, [getTransacoes, selectedProfessionalId]);
+  }, [getTransacoes, selectedProfessionalId, serviceFilter]);
 
   const handleAddTransacao = useCallback(async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => {
     console.log('useFinanceiro: Adicionando transação:', transacaoData);
@@ -61,14 +69,18 @@ export const useFinanceiro = () => {
     if (success) {
       toast.success('Transação adicionada com sucesso!');
       // Recarregar transações
-      const transacoesData = await getTransacoes(selectedProfessionalId);
+      const filters = {
+        professionalId: selectedProfessionalId,
+        serviceFilter: serviceFilter
+      };
+      const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
     } else {
       toast.error('Erro ao adicionar transação');
     }
     
     return success;
-  }, [addTransacao, getTransacoes, selectedProfessionalId]);
+  }, [addTransacao, getTransacoes, selectedProfessionalId, serviceFilter]);
 
   const handleUpdateTransacao = useCallback(async (id: string, transacaoData: Partial<Transacao>) => {
     console.log('useFinanceiro: Atualizando transação:', id, transacaoData);
@@ -92,6 +104,8 @@ export const useFinanceiro = () => {
     profissionais,
     selectedProfessionalId,
     setSelectedProfessionalId,
+    serviceFilter,
+    setServiceFilter,
     loading,
     handleAddTransacao,
     handleUpdateTransacao
