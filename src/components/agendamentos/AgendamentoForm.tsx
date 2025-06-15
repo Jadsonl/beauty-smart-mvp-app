@@ -1,14 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ClientSelector } from './ClientSelector';
-import { ServiceSelector } from './ServiceSelector';
-import { ProfessionalSelector } from './ProfessionalSelector';
-import { DateTimeSelector } from './DateTimeSelector';
+import { FormHeader } from './FormHeader';
+import { LoadingState } from './LoadingState';
+import { FormFields } from './FormFields';
+import { FormActions } from './FormActions';
 import { type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
 
 interface AgendamentoFormProps {
@@ -112,18 +107,6 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
     onClose();
   };
 
-  const handleServicoChange = (servicoId: string) => {
-    const servico = servicos.find(s => s.id === servicoId);
-    updateFormData({ 
-      servicoId,
-      servicoValor: servico ? servico.preco.toString() : ''
-    });
-  };
-
-  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateFormData({ servicoValor: e.target.value });
-  };
-
   // Check if form is valid for submission - CORRECTED LOGIC
   const isFormValid = Boolean(
     formData.clienteId && 
@@ -146,95 +129,37 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
   // Show loading state if data is still being fetched
   if (!clientes || !servicos || !profissionais) {
     return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px]">
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Carregando dados...</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LoadingState
+        isOpen={isOpen}
+        onClose={onClose}
+      />
     );
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-4">
-            <ClientSelector
-              value={formData.clienteId}
-              onChange={(value) => updateFormData({ clienteId: value })}
-              clientes={clientes}
-            />
+    <div>
+      <FormHeader
+        isOpen={isOpen}
+        onClose={onClose}
+        editingAgendamento={editingAgendamento}
+      />
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormFields
+          formData={formData}
+          updateFormData={updateFormData}
+          clientes={clientes}
+          servicos={servicos}
+          profissionais={profissionais}
+        />
 
-            <ServiceSelector
-              servicoId={formData.servicoId}
-              servicoValor={formData.servicoValor}
-              onServicoChange={handleServicoChange}
-              onValorChange={handleValorChange}
-              servicos={servicos}
-            />
-
-            <ProfessionalSelector
-              value={formData.profissionalId}
-              onChange={(value) => updateFormData({ profissionalId: value })}
-              profissionais={profissionais}
-            />
-
-            <DateTimeSelector
-              data={formData.data}
-              horario={formData.horario}
-              onDataChange={(value) => updateFormData({ data: value })}
-              onHorarioChange={(value) => updateFormData({ horario: value })}
-            />
-
-            <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações (Opcional)</Label>
-              <Textarea
-                id="observacoes"
-                placeholder="Digite observações sobre o agendamento..."
-                value={formData.observacoes}
-                onChange={(e) => updateFormData({ observacoes: e.target.value })}
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={!isFormValid || loading}
-              className="bg-pink-600 hover:bg-pink-700"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Salvando...
-                </div>
-              ) : (
-                editingAgendamento ? 'Atualizar Agendamento' : 'Salvar Agendamento'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <FormActions
+          isFormValid={isFormValid}
+          loading={loading}
+          editingAgendamento={editingAgendamento}
+          onClose={handleClose}
+        />
+      </form>
+    </div>
   );
 };

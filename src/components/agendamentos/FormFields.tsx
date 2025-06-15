@@ -19,7 +19,7 @@ interface FormFieldsProps {
     horario: string;
     observacoes: string;
   };
-  updateFormData: (updates: Partial<typeof formData>) => void;
+  updateFormData: (updates: Partial<FormFieldsProps['formData']>) => void;
   clientes: Cliente[];
   servicos: Servico[];
   profissionais: Profissional[];
@@ -42,6 +42,13 @@ export const FormFields: React.FC<FormFieldsProps> = ({
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updateFormData({ servicoValor: e.target.value });
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const formattedDate = date.toISOString().split('T')[0];
+      updateFormData({ data: formattedDate });
+    }
   };
 
   return (
@@ -69,7 +76,7 @@ export const FormFields: React.FC<FormFieldsProps> = ({
       <DateTimeSelector
         data={formData.data}
         horario={formData.horario}
-        onDataChange={(value) => updateFormData({ data: value })}
+        onDateSelect={handleDateSelect}
         onHorarioChange={(value) => updateFormData({ horario: value })}
       />
 
