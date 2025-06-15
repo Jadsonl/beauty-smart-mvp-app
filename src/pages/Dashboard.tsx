@@ -1,4 +1,3 @@
-
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,9 +8,10 @@ import { ptBR } from 'date-fns/locale';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { getAgendamentos, getTransacoes } = useSupabase();
+  const { getAgendamentos, getTransacoes, getClientes } = useSupabase();
   const [agendamentos, setAgendamentos] = useState<any[]>([]);
   const [transacoes, setTransacoes] = useState<any[]>([]);
+  const [aniversariantes, setAniversariantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -20,13 +20,28 @@ const Dashboard = () => {
         try {
           console.log('Dashboard: Carregando dados para usuário:', user.id);
           setLoading(true);
-          const [agendamentosData, transacoesData] = await Promise.all([
+          const [agendamentosData, transacoesData, clientesData] = await Promise.all([
             getAgendamentos(),
-            getTransacoes()
+            getTransacoes(),
+            getClientes()
           ]);
-          console.log('Dashboard: Dados carregados - agendamentos:', agendamentosData.length, 'transações:', transacoesData.length);
+          
+          // Filtrar aniversariantes do mês atual
+          const currentMonth = new Date().getMonth() + 1;
+          const aniversariantesDoMes = (clientesData || []).filter(cliente => {
+            if (!cliente.date_of_birth) return false;
+            const birthMonth = new Date(cliente.date_of_birth).getMonth() + 1;
+            return birthMonth === currentMonth;
+          }).sort((a, b) => {
+            const dayA = new Date(a.date_of_birth).getDate();
+            const dayB = new Date(b.date_of_birth).getDate();
+            return dayA - dayB;
+          });
+          
+          console.log('Dashboard: Dados carregados - agendamentos:', agendamentosData.length, 'transações:', transacoesData.length, 'aniversariantes:', aniversariantesDoMes.length);
           setAgendamentos(agendamentosData);
           setTransacoes(transacoesData);
+          setAniversariantes(aniversariantesDoMes);
         } catch (error) {
           console.error('Dashboard: Erro ao carregar dados:', error);
         } finally {
@@ -39,7 +54,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [user?.id, getAgendamentos, getTransacoes]);
+  }, [user?.id, getAgendamentos, getTransacoes, getClientes]);
 
   if (loading) {
     return (
@@ -136,7 +151,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Today's Appointments */}
+        {/* Today's Appointments and Birthday Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           <Card>
             <CardHeader>
@@ -172,37 +187,82 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Notifications */}
+          {/* Aniversariantes do Mês */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <span className="text-xl">🔔</span>
-                Notificações
+                <span className="text-xl">🎂</span>
+                Aniversariantes do Mês
               </CardTitle>
               <CardDescription className="text-sm">
-                Atualizações importantes do seu negócio
+                {format(today, "MMMM 'de' yyyy", { locale: ptBR })}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {agendamentosHoje > 0 && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs sm:text-sm text-blue-800">
-                      📅 Você tem {agendamentosHoje} agendamento{agendamentosHoje > 1 ? 's' : ''} para hoje.
-                    </p>
-                  </div>
-                )}
-                
-                {agendamentosHoje === 0 && (
-                  <div className="text-center py-4">
-                    <span className="text-2xl sm:text-4xl mb-2 block">✨</span>
-                    <p className="text-gray-500 text-xs sm:text-sm">Tudo em dia! Nenhuma notificação pendente.</p>
-                  </div>
-                )}
-              </div>
+              {aniversariantes.length === 0 ? (
+                <div className="text-center py-6 sm:py-8">
+                  <span className="text-2xl sm:text-4xl mb-4 block">🎂</span>
+                  <p className="text-gray-500 text-sm sm:text-base">Nenhum aniversariante este mês.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {aniversariantes.map((cliente) => (
+                    <div key={cliente.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-50 rounded-lg gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm sm:text-base truncate">{cliente.nome}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          {format(new Date(cliente.date_of_birth), "dd 'de' MMMM", { locale: ptBR })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-2xl">🎉</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
+
+        {/* Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <span className="text-xl">🔔</span>
+              Notificações
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Atualizações importantes do seu negócio
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {agendamentosHoje > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs sm:text-sm text-blue-800">
+                    📅 Você tem {agendamentosHoje} agendamento{agendamentosHoje > 1 ? 's' : ''} para hoje.
+                  </p>
+                </div>
+              )}
+              
+              {aniversariantes.length > 0 && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <p className="text-xs sm:text-sm text-purple-800">
+                    🎂 {aniversariantes.length} cliente{aniversariantes.length > 1 ? 's fazem' : ' faz'} aniversário este mês!
+                  </p>
+                </div>
+              )}
+              
+              {agendamentosHoje === 0 && aniversariantes.length === 0 && (
+                <div className="text-center py-4">
+                  <span className="text-2xl sm:text-4xl mb-2 block">✨</span>
+                  <p className="text-gray-500 text-xs sm:text-sm">Tudo em dia! Nenhuma notificação pendente.</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

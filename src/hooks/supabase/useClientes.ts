@@ -9,6 +9,7 @@ export interface Cliente {
   nome: string;
   telefone?: string;
   email?: string;
+  date_of_birth?: string;
   created_at?: string;
 }
 
@@ -41,6 +42,47 @@ export const useClientes = () => {
       return data || [];
     } catch (error) {
       console.error('getClientes: Erro inesperado:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const getAniversariantes = useCallback(async (): Promise<Cliente[]> => {
+    if (!user?.id) {
+      console.warn('getAniversariantes: Usuário não autenticado.');
+      return [];
+    }
+    
+    setLoading(true);
+    console.log('getAniversariantes: Buscando aniversariantes do mês para user_id:', user.id);
+    
+    try {
+      const currentMonth = new Date().getMonth() + 1;
+      
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .not('date_of_birth', 'is', null)
+        .order('date_of_birth', { ascending: true });
+      
+      if (error) {
+        console.error('getAniversariantes: Erro ao buscar aniversariantes:', error);
+        return [];
+      }
+      
+      // Filtrar pelo mês no frontend
+      const aniversariantes = (data || []).filter(cliente => {
+        if (!cliente.date_of_birth) return false;
+        const birthMonth = new Date(cliente.date_of_birth).getMonth() + 1;
+        return birthMonth === currentMonth;
+      });
+      
+      console.log('getAniversariantes: Aniversariantes encontrados:', aniversariantes);
+      return aniversariantes;
+    } catch (error) {
+      console.error('getAniversariantes: Erro inesperado:', error);
       return [];
     } finally {
       setLoading(false);

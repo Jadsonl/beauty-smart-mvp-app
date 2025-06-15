@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
+import { DateFilters } from '@/components/financeiro/DateFilters';
 import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
 import { AdicionarTransacaoModal } from '@/components/financeiro/AdicionarTransacaoModal';
 import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationModal';
@@ -21,6 +22,10 @@ const Financeiro = () => {
     profissionais,
     selectedProfessionalId,
     setSelectedProfessionalId,
+    selectedMonth,
+    setSelectedMonth,
+    selectedYear,
+    setSelectedYear,
     serviceFilter,
     setServiceFilter,
     loading,
@@ -171,11 +176,18 @@ const Financeiro = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <ProfessionalFilter
                 value={selectedProfessionalId}
                 onChange={setSelectedProfessionalId}
                 profissionais={profissionais}
+              />
+              
+              <DateFilters
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                onMonthChange={setSelectedMonth}
+                onYearChange={setSelectedYear}
               />
               
               {/* Busca por Serviço ou Profissional */}
@@ -208,6 +220,9 @@ const Financeiro = () => {
                     Busca: "{searchFilter}"
                   </Badge>
                 )}
+                <Badge variant="secondary">
+                  Período: {format(new Date(selectedYear, selectedMonth - 1), 'MMMM/yyyy', { locale: ptBR })}
+                </Badge>
               </div>
             )}
           </CardContent>

@@ -16,6 +16,8 @@ export const useFinanceiro = () => {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [serviceFilter, setServiceFilter] = useState<string>('');
 
   // Carregar profissionais
@@ -49,11 +51,15 @@ export const useFinanceiro = () => {
   useEffect(() => {
     const loadTransacoes = async () => {
       console.log('useFinanceiro: Carregando transações com filtros:', {
-        professionalId: selectedProfessionalId
+        professionalId: selectedProfessionalId,
+        month: selectedMonth,
+        year: selectedYear
       });
       try {
         const filters = {
-          professionalId: selectedProfessionalId
+          professionalId: selectedProfessionalId,
+          month: selectedMonth,
+          year: selectedYear
         };
         const transacoesData = await getTransacoes(filters);
         setTransacoes(transacoesData || []);
@@ -65,7 +71,7 @@ export const useFinanceiro = () => {
     };
 
     loadTransacoes();
-  }, [getTransacoes, selectedProfessionalId]);
+  }, [getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
 
   const handleAddTransacao = useCallback(async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => {
     console.log('useFinanceiro: Adicionando transação:', transacaoData);
@@ -75,7 +81,9 @@ export const useFinanceiro = () => {
       toast.success('Transação adicionada com sucesso!');
       // Recarregar transações
       const filters = {
-        professionalId: selectedProfessionalId
+        professionalId: selectedProfessionalId,
+        month: selectedMonth,
+        year: selectedYear
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -84,7 +92,7 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [addTransacao, getTransacoes, selectedProfessionalId]);
+  }, [addTransacao, getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
 
   const handleUpdateTransacao = useCallback(async (id: string, transacaoData: Partial<Transacao>) => {
     console.log('useFinanceiro: Atualizando transação:', id, transacaoData);
@@ -94,7 +102,9 @@ export const useFinanceiro = () => {
       toast.success('Transação atualizada com sucesso!');
       // Recarregar transações para manter consistência
       const filters = {
-        professionalId: selectedProfessionalId
+        professionalId: selectedProfessionalId,
+        month: selectedMonth,
+        year: selectedYear
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -103,7 +113,7 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [updateTransacao, getTransacoes, selectedProfessionalId]);
+  }, [updateTransacao, getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
 
   const handleDeleteTransacao = useCallback(async (id: string) => {
     console.log('useFinanceiro: Excluindo transação:', id);
@@ -113,7 +123,9 @@ export const useFinanceiro = () => {
       toast.success('Transação excluída com sucesso!');
       // Recarregar transações para manter consistência
       const filters = {
-        professionalId: selectedProfessionalId
+        professionalId: selectedProfessionalId,
+        month: selectedMonth,
+        year: selectedYear
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -122,13 +134,17 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [deleteTransacao, getTransacoes, selectedProfessionalId]);
+  }, [deleteTransacao, getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
 
   return {
     transacoes,
     profissionais,
     selectedProfessionalId,
     setSelectedProfessionalId,
+    selectedMonth,
+    setSelectedMonth,
+    selectedYear,
+    setSelectedYear,
     serviceFilter,
     setServiceFilter,
     loading,

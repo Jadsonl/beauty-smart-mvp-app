@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +17,8 @@ export interface Transacao {
 
 interface TransacaoFilters {
   professionalId?: string;
+  month?: number;
+  year?: number;
 }
 
 export const useTransacoes = () => {
@@ -40,6 +43,17 @@ export const useTransacoes = () => {
       // Adicionar filtro por profissional se especificado
       if (filters.professionalId && filters.professionalId !== 'all') {
         query = query.eq('professional_id', filters.professionalId);
+      }
+      
+      // Adicionar filtros de mês e ano se especificados
+      if (filters.month && filters.year) {
+        const startDate = new Date(filters.year, filters.month - 1, 1).toISOString().split('T')[0];
+        const endDate = new Date(filters.year, filters.month, 0).toISOString().split('T')[0];
+        query = query.gte('data', startDate).lte('data', endDate);
+      } else if (filters.year) {
+        const startDate = new Date(filters.year, 0, 1).toISOString().split('T')[0];
+        const endDate = new Date(filters.year, 11, 31).toISOString().split('T')[0];
+        query = query.gte('data', startDate).lte('data', endDate);
       }
       
       const { data, error } = await query.order('data', { ascending: false });

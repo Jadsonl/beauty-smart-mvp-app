@@ -6,10 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSupabase, type Cliente } from '@/hooks/useSupabase';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit, Trash2, Phone, Mail } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useSupabase, type Cliente } from '@/hooks/useSupabase';
+import { Edit, Trash2, Phone, Mail, Calendar as CalendarBirthday } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Clientes = () => {
@@ -22,7 +26,8 @@ const Clientes = () => {
   const [formData, setFormData] = useState({
     nome: '',
     telefone: '',
-    email: ''
+    email: '',
+    date_of_birth: null as Date | null
   });
 
   // Carregar clientes do Supabase
@@ -98,8 +103,15 @@ const Clientes = () => {
     try {
       let success = false;
       
+      const clienteData = {
+        nome: formData.nome,
+        telefone: formData.telefone,
+        email: formData.email,
+        date_of_birth: formData.date_of_birth ? format(formData.date_of_birth, 'yyyy-MM-dd') : null
+      };
+      
       if (editingCliente) {
-        success = await updateCliente(editingCliente.id, formData);
+        success = await updateCliente(editingCliente.id, clienteData);
         if (success) {
           toast({
             title: "Sucesso",
@@ -107,7 +119,7 @@ const Clientes = () => {
           });
         }
       } else {
-        success = await addCliente(formData);
+        success = await addCliente(clienteData);
         if (success) {
           toast({
             title: "Sucesso",
@@ -223,6 +235,33 @@ const Clientes = () => {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label>Data de Nascimento</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.date_of_birth && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.date_of_birth ? format(formData.date_of_birth, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data de nascimento"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.date_of_birth || undefined}
+                        onSelect={(date) => setFormData(prev => ({ ...prev, date_of_birth: date || null }))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button 
                     type="button" 
@@ -244,7 +283,7 @@ const Clientes = () => {
           </Dialog>
         </div>
 
-        {/* Clientes List */}
+        {/* Lista de Clientes com data de nascimento */}
         <Card>
           <CardHeader>
             <CardTitle>Lista de Clientes</CardTitle>
@@ -321,6 +360,12 @@ const Clientes = () => {
                           <div className="flex items-center space-x-2 text-sm text-gray-600">
                             <Mail className="h-4 w-4" />
                             <span className="truncate">{cliente.email}</span>
+                          </div>
+                        )}
+                        {cliente.date_of_birth && (
+                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <CalendarBirthday className="h-4 w-4" />
+                            <span>{format(new Date(cliente.date_of_birth), 'dd/MM/yyyy', { locale: ptBR })}</span>
                           </div>
                         )}
                       </div>
