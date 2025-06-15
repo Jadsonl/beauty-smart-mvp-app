@@ -24,23 +24,20 @@ const timeSlots = [
   '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
 ];
 
-// Função auxiliar para converter Date em string YYYY-MM-DD de forma segura
+// Função auxiliar para converter Date em string YYYY-MM-DD SEM FUSO (base local)
 const formatDateToYYYYMMDD = (date: Date): string => {
+  // Garante que não há deslocamento de fuso
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
-// Função auxiliar para converter string YYYY-MM-DD em Date de forma segura
+// Função auxiliar para converter string YYYY-MM-DD em Date LOCAL ("yyyy-mm-dd" -> local 00:00)
 const parseYYYYMMDDToDate = (dateString: string): Date | null => {
   if (!dateString) return null;
-  
-  // Parse manual para evitar problemas de fuso horário
   const [year, month, day] = dateString.split('-').map(Number);
   if (!year || !month || !day) return null;
-  
-  // Criar data no fuso horário local (não UTC)
   return new Date(year, month - 1, day);
 };
 
@@ -50,26 +47,16 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   onDateSelect,
   onHorarioChange
 }) => {
-  console.log('DateTimeSelector: Renderizado com data =', data, 'horario =', horario);
-
-  // Converter string de data para objeto Date para o calendário
+  // Corrigir a seleção para sempre usar timezone local
   const selectedDate = data ? parseYYYYMMDDToDate(data) : undefined;
-  
-  console.log('DateTimeSelector: Data convertida para calendário:', selectedDate);
 
-  const handleDateSelect = (selectedDate: Date | undefined) => {
-    console.log('DateTimeSelector: Data selecionada pelo usuário:', selectedDate);
-    
-    if (selectedDate) {
-      // Converter para string YYYY-MM-DD de forma segura
-      const formattedDate = formatDateToYYYYMMDD(selectedDate);
-      console.log('DateTimeSelector: Data formatada para envio:', formattedDate);
-      
-      // Criar nova data com a string formatada para garantir consistência
+  const handleDateSelect = (selected: Date | undefined) => {
+    if (selected) {
+      // Força para sempre "YYYY-MM-DD" do horário local
+      const formattedDate = formatDateToYYYYMMDD(selected);
+      // Chama parse de novo para garantir (pode ser redundante, mas mantém padrão em todo app)
       const dateToSend = parseYYYYMMDDToDate(formattedDate);
-      console.log('DateTimeSelector: Data final para onDateSelect:', dateToSend);
-      
-      onDateSelect(dateToSend);
+      onDateSelect(dateToSend || undefined);
     } else {
       onDateSelect(undefined);
     }
