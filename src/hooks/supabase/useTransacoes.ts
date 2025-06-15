@@ -17,7 +17,6 @@ export interface Transacao {
 
 interface TransacaoFilters {
   professionalId?: string;
-  serviceFilter?: string;
 }
 
 export const useTransacoes = () => {
@@ -42,11 +41,6 @@ export const useTransacoes = () => {
       // Adicionar filtro por profissional se especificado
       if (filters.professionalId && filters.professionalId !== 'all') {
         query = query.eq('professional_id', filters.professionalId);
-      }
-      
-      // Adicionar filtro por serviço se especificado
-      if (filters.serviceFilter && filters.serviceFilter.trim() !== '') {
-        query = query.ilike('descricao', `%${filters.serviceFilter.trim()}%`);
       }
       
       const { data, error } = await query.order('data', { ascending: false });

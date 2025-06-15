@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FormHeader } from './FormHeader';
-import { LoadingState } from './LoadingState';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FormFields } from './FormFields';
 import { FormActions } from './FormActions';
 import { type Agendamento, type Cliente, type Servico, type Profissional } from '@/hooks/useSupabase';
@@ -129,37 +128,45 @@ export const AgendamentoForm: React.FC<AgendamentoFormProps> = ({
   // Show loading state if data is still being fetched
   if (!clientes || !servicos || !profissionais) {
     return (
-      <LoadingState
-        isOpen={isOpen}
-        onClose={onClose}
-      />
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[600px]">
+          <div className="flex items-center justify-center h-32">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando dados...</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <div>
-      <FormHeader
-        isOpen={isOpen}
-        onClose={onClose}
-        editingAgendamento={editingAgendamento}
-      />
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormFields
-          formData={formData}
-          updateFormData={updateFormData}
-          clientes={clientes}
-          servicos={servicos}
-          profissionais={profissionais}
-        />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {editingAgendamento ? 'Editar Agendamento' : 'Novo Agendamento'}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormFields
+            formData={formData}
+            updateFormData={updateFormData}
+            clientes={clientes}
+            servicos={servicos}
+            profissionais={profissionais}
+          />
 
-        <FormActions
-          isFormValid={isFormValid}
-          loading={loading}
-          editingAgendamento={editingAgendamento}
-          onClose={handleClose}
-        />
-      </form>
-    </div>
+          <FormActions
+            isFormValid={isFormValid}
+            loading={loading}
+            editingAgendamento={editingAgendamento}
+            onClose={handleClose}
+          />
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

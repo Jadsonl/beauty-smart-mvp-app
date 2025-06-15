@@ -42,13 +42,11 @@ export const useFinanceiro = () => {
   useEffect(() => {
     const loadTransacoes = async () => {
       console.log('useFinanceiro: Carregando transações com filtros:', {
-        professionalId: selectedProfessionalId,
-        serviceFilter
+        professionalId: selectedProfessionalId
       });
       try {
         const filters = {
-          professionalId: selectedProfessionalId,
-          serviceFilter: serviceFilter
+          professionalId: selectedProfessionalId
         };
         const transacoesData = await getTransacoes(filters);
         setTransacoes(transacoesData || []);
@@ -60,7 +58,7 @@ export const useFinanceiro = () => {
     };
 
     loadTransacoes();
-  }, [getTransacoes, selectedProfessionalId, serviceFilter]);
+  }, [getTransacoes, selectedProfessionalId]);
 
   const handleAddTransacao = useCallback(async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => {
     console.log('useFinanceiro: Adicionando transação:', transacaoData);
@@ -70,8 +68,7 @@ export const useFinanceiro = () => {
       toast.success('Transação adicionada com sucesso!');
       // Recarregar transações
       const filters = {
-        professionalId: selectedProfessionalId,
-        serviceFilter: serviceFilter
+        professionalId: selectedProfessionalId
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -80,7 +77,7 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [addTransacao, getTransacoes, selectedProfessionalId, serviceFilter]);
+  }, [addTransacao, getTransacoes, selectedProfessionalId]);
 
   const handleUpdateTransacao = useCallback(async (id: string, transacaoData: Partial<Transacao>) => {
     console.log('useFinanceiro: Atualizando transação:', id, transacaoData);
