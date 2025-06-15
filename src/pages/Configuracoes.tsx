@@ -26,7 +26,10 @@ const Configuracoes = () => {
   }, [user]);
 
   const loadProfile = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('Configuracoes: Usuário não autenticado, não carregando perfil');
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -54,30 +57,37 @@ const Configuracoes = () => {
 
   const handleSaveProfile = async () => {
     if (!user?.id) {
+      console.error('Configuracoes: Usuário não autenticado para salvar');
       toast.error('Usuário não autenticado');
       return;
     }
 
     // Validação básica
     if (!profile.full_name.trim()) {
+      console.log('Configuracoes: Validação falhou - nome completo obrigatório');
       toast.error('Nome completo é obrigatório');
       return;
     }
 
     setIsSaving(true);
-    console.log('Configuracoes: Salvando perfil:', profile);
+    console.log('Configuracoes: Iniciando salvamento do perfil');
+    console.log('Configuracoes: Estado atual do profile:', profile);
+    console.log('Configuracoes: User ID:', user.id);
+    console.log('Configuracoes: User email:', user.email);
     
     try {
       const success = await updateProfile(profile);
       if (success) {
+        console.log('Configuracoes: Perfil salvo com sucesso');
         toast.success('Perfil atualizado com sucesso!');
         // Recarregar o perfil para confirmar que foi salvo
         await loadProfile();
       } else {
-        toast.error('Erro ao atualizar perfil. Verifique os dados e tente novamente.');
+        console.error('Configuracoes: Falha ao salvar perfil');
+        toast.error('Erro ao atualizar perfil. Verifique os logs do console para mais detalhes.');
       }
     } catch (error) {
-      console.error('Configuracoes: Erro ao salvar alterações:', error);
+      console.error('Configuracoes: Erro inesperado ao salvar alterações:', error);
       toast.error('Erro inesperado ao salvar alterações');
     } finally {
       setIsSaving(false);
@@ -86,10 +96,14 @@ const Configuracoes = () => {
 
   const handleInputChange = (field: string, value: string) => {
     console.log('Configuracoes: Alterando campo:', field, 'para:', value);
-    setProfile(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setProfile(prev => {
+      const newProfile = {
+        ...prev,
+        [field]: value
+      };
+      console.log('Configuracoes: Novo estado do profile:', newProfile);
+      return newProfile;
+    });
   };
 
   if (isLoading) {
@@ -107,6 +121,13 @@ const Configuracoes = () => {
   return (
     <Layout>
       <div className="space-y-6 p-4 sm:p-6">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configurações</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            Gerencie suas informações pessoais e do negócio
+          </p>
+        </div>
+
         <PersonalInfoSection 
           profile={profile}
           onInputChange={handleInputChange}

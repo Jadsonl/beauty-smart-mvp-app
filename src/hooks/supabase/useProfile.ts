@@ -56,10 +56,23 @@ export const useProfile = () => {
     }
     
     setLoading(true);
-    console.log('updateProfile: Atualizando perfil para user_id:', user.id, 'dados:', profileData);
+    console.log('updateProfile: Iniciando atualização para user_id:', user.id);
+    console.log('updateProfile: Dados recebidos do frontend:', profileData);
+    
+    // Preparar dados para inserção/atualização - mapeamento explícito
+    const dataToSave = {
+      full_name: profileData.full_name || null,
+      phone: profileData.phone || null,
+      business_name: profileData.business_name || null,
+      business_type: profileData.business_type || null,
+      address: profileData.address || null,
+    };
+    
+    console.log('updateProfile: Dados preparados para salvar:', dataToSave);
     
     try {
       // Primeiro, verificar se o perfil já existe
+      console.log('updateProfile: Verificando se perfil existe...');
       const { data: existingProfile, error: selectError } = await supabase
         .from('profiles')
         .select('id')
@@ -67,52 +80,56 @@ export const useProfile = () => {
         .maybeSingle();
 
       console.log('updateProfile: Perfil existente encontrado:', existingProfile);
-      console.log('updateProfile: Erro na busca:', selectError);
+      
+      if (selectError) {
+        console.error('updateProfile: Erro na busca de perfil existente:', selectError);
+      }
 
       let result;
       
       if (existingProfile) {
         // Atualizar perfil existente
-        console.log('updateProfile: Atualizando perfil existente');
+        console.log('updateProfile: Atualizando perfil existente para id:', user.id);
         result = await supabase
           .from('profiles')
-          .update({
-            full_name: profileData.full_name,
-            phone: profileData.phone,
-            business_name: profileData.business_name,
-            business_type: profileData.business_type,
-            address: profileData.address,
-          })
-          .eq('id', user.id);
+          .update(dataToSave)
+          .eq('id', user.id)
+          .select(); // Adicionar select para ver o resultado
           
         console.log('updateProfile: Resultado da atualização:', result);
       } else {
         // Criar novo perfil
         console.log('updateProfile: Criando novo perfil');
+        const newProfileData = {
+          id: user.id,
+          email: user.email!,
+          ...dataToSave,
+        };
+        
+        console.log('updateProfile: Dados para novo perfil:', newProfileData);
+        
         result = await supabase
           .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email!,
-            full_name: profileData.full_name,
-            phone: profileData.phone,
-            business_name: profileData.business_name,
-            business_type: profileData.business_type,
-            address: profileData.address,
-          });
+          .insert(newProfileData)
+          .select(); // Adicionar select para ver o resultado
           
         console.log('updateProfile: Resultado da criação:', result);
       }
       
       if (result.error) {
-        console.error('updateProfile: Erro ao salvar perfil:', result.error);
+        console.error('updateProfile: Erro detalhado do Supabase:', {
+          message: result.error.message,
+          details: result.error.details,
+          hint: result.error.hint,
+          code: result.error.code
+        });
         return false;
       }
       
-      console.log('updateProfile: Perfil salvo com sucesso');
+      console.log('updateProfile: Operação realizada com sucesso. Dados salvos:', result.data);
       return true;
     } catch (error) {
-      console.error('updateProfile: Erro inesperado:', error);
+      console.error('updateProfile: Erro inesperado capturado:', error);
       return false;
     } finally {
       setLoading(false);
