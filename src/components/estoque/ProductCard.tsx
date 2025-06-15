@@ -13,9 +13,19 @@ interface ProductCardProps {
 
 export const ProductCard = ({ produto, inventario, onEdit, onDelete }: ProductCardProps) => {
   const inventarioProduto = inventario.find(inv => inv.product_id === produto.id);
-  const quantidadeEstoque = inventarioProduto?.quantity || 0;
-  const estoqueMinimo = produto.min_stock_level || 0;
+  const quantidadeEstoque = inventarioProduto?.quantity ?? 0;
+  const estoqueMinimo = produto.min_stock_level ?? 0;
   const isLowStock = quantidadeEstoque <= estoqueMinimo;
+
+  // Melhorar visualização: só mostra a unidade se ela existir e só 1 vez (sem zeros desnecessários)
+  const formatQuantidade = (quantidade: number, unidade?: string) => {
+    // Se unidade não foi informada, mostra só o número
+    if (!unidade || unidade.trim() === '') {
+      return quantidade;
+    }
+    // Se unidade existe, mostra número + unidade
+    return `${quantidade} ${unidade}`;
+  };
 
   return (
     <Card className={`${isLowStock ? 'border-orange-300' : 'border-gray-200'} relative`}>
@@ -58,14 +68,14 @@ export const ProductCard = ({ produto, inventario, onEdit, onDelete }: ProductCa
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600">Estoque:</span>
           <span className={`font-medium ${isLowStock ? 'text-orange-600' : 'text-green-600'}`}>
-            {quantidadeEstoque}{produto.unit ? ` ${produto.unit}` : ''}
+            {formatQuantidade(quantidadeEstoque, produto.unit)}
           </span>
         </div>
         
         <div className="flex justify-between items-center text-sm">
           <span className="text-gray-600">Mínimo:</span>
           <span className="font-medium text-gray-900">
-            {estoqueMinimo}{produto.unit ? ` ${produto.unit}` : ''}
+            {formatQuantidade(estoqueMinimo, produto.unit)}
           </span>
         </div>
         
