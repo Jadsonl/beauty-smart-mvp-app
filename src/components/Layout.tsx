@@ -82,7 +82,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Mobile Menu Button */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-md shadow-md transition-colors"
+        className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-md shadow-md transition-colors"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
       >
         {isMobileMenuOpen ? <X className="h-5 w-5 dark:text-white" /> : <Menu className="h-5 w-5 dark:text-white" />}
