@@ -2,10 +2,11 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+
+import { Menu } from 'lucide-react';
 import { BarChart3, Users, UserCheck, Scissors, Calendar, Package, DollarSign, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
 
   const menuItems = [
     { 
@@ -75,29 +76,67 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleMenuClick = (path: string) => {
     navigate(path);
-    setIsMobileMenuOpen(false);
   };
 
   return (
     <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Mobile Menu Button */}
-      <button
-        className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-md shadow-md transition-colors"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      >
-        {isMobileMenuOpen ? <X className="h-5 w-5 dark:text-white" /> : <Menu className="h-5 w-5 dark:text-white" />}
-      </button>
+      <Sheet>
+        <SheetTrigger asChild>
+          <button
+            className="lg:hidden fixed top-4 right-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-md shadow-md transition-colors"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5 dark:text-white" />
+          </button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="border-b p-4">
+            <h1 className="text-xl font-bold text-pink-600 dark:text-pink-400">BelezaSmart</h1>
+            <p className="text-xs text-muted-foreground mt-1 truncate">{user?.email}</p>
+          </div>
+          <nav className="p-2">
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = location.pathname === item.href;
+              return (
+                <SheetClose asChild key={item.href}>
+                  <button
+                    onClick={() => handleMenuClick(item.href)}
+                    className={cn(
+                      "w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                      isActive
+                        ? "bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <IconComponent className="h-5 w-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </button>
+                </SheetClose>
+              );
+            })}
+            <div className="mt-4">
+              <SheetClose asChild>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  <span className="text-lg">🚪</span>
+                  <span className="font-medium">Sair</span>
+                </button>
+              </SheetClose>
+            </div>
+          </nav>
+        </SheetContent>
+      </Sheet>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setIsMobileMenuOpen(false)} />
-      )}
+      
+        
 
       {/* Sidebar */}
       <div className={cn(
-        "w-64 bg-white dark:bg-gray-800 shadow-lg h-screen fixed left-0 top-0 z-40 transform transition-all duration-300 ease-in-out",
-        "lg:translate-x-0",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        "hidden lg:block w-64 bg-white dark:bg-gray-800 shadow-lg h-screen fixed left-0 top-0 z-40"
       )}>
         <div className="p-4 sm:p-6 border-b dark:border-gray-700">
           <h1 className="text-xl sm:text-2xl font-bold text-pink-600 dark:text-pink-400">BelezaSmart</h1>
