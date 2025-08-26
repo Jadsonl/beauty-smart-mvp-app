@@ -20,15 +20,16 @@ serve(async (req) => {
     if (!token) {
       return new Response(`
         <!DOCTYPE html>
-        <html>
+        <html lang="pt-BR">
         <head>
           <title>Token Inválido</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #e74c3c; }
+            .error { color: #e74c3c; font-size: 20px; margin-bottom: 16px; }
+            p { font-size: 16px; line-height: 1.5; color: #333; }
           </style>
         </head>
         <body>
@@ -61,15 +62,16 @@ serve(async (req) => {
       console.error('Token not found:', tokenError);
       return new Response(`
         <!DOCTYPE html>
-        <html>
+        <html lang="pt-BR">
         <head>
           <title>Token Não Encontrado</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #e74c3c; }
+            .error { color: #e74c3c; font-size: 20px; margin-bottom: 16px; }
+            p { font-size: 16px; line-height: 1.5; color: #333; }
           </style>
         </head>
         <body>
@@ -92,15 +94,16 @@ serve(async (req) => {
     if (now > expiresAt) {
       return new Response(`
         <!DOCTYPE html>
-        <html>
+        <html lang="pt-BR">
         <head>
           <title>Token Expirado</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #e74c3c; }
+            .error { color: #e74c3c; font-size: 20px; margin-bottom: 16px; }
+            p { font-size: 16px; line-height: 1.5; color: #333; }
           </style>
         </head>
         <body>
@@ -120,15 +123,16 @@ serve(async (req) => {
     if (tokenData.used_at) {
       return new Response(`
         <!DOCTYPE html>
-        <html>
+        <html lang="pt-BR">
         <head>
           <title>Já Confirmado</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .success { color: #27ae60; }
+            .success { color: #27ae60; font-size: 20px; margin-bottom: 16px; }
+            p { font-size: 16px; line-height: 1.5; color: #333; }
           </style>
         </head>
         <body>
@@ -154,15 +158,16 @@ serve(async (req) => {
       console.error('Error updating appointment:', updateError);
       return new Response(`
         <!DOCTYPE html>
-        <html>
+        <html lang="pt-BR">
         <head>
           <title>Erro na Confirmação</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
             .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #e74c3c; }
+            .error { color: #e74c3c; font-size: 20px; margin-bottom: 16px; }
+            p { font-size: 16px; line-height: 1.5; color: #333; }
           </style>
         </head>
         <body>
@@ -187,16 +192,17 @@ serve(async (req) => {
     // Return success page
     return new Response(`
       <!DOCTYPE html>
-      <html>
+      <html lang="pt-BR">
       <head>
         <title>Agendamento Confirmado</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
           .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .success { color: #27ae60; }
-          .button { background: #27ae60; color: white; padding: 12px 24px; border: none; border-radius: 5px; text-decoration: none; display: inline-block; margin-top: 20px; }
+          .success { color: #27ae60; font-size: 20px; margin-bottom: 16px; }
+          p { font-size: 16px; line-height: 1.5; color: #333; }
+          small { color: #666; }
         </style>
       </head>
       <body>
@@ -216,15 +222,16 @@ serve(async (req) => {
     console.error('Error in confirm-appointment function:', error);
     return new Response(`
       <!DOCTYPE html>
-      <html>
+      <html lang="pt-BR">
       <head>
         <title>Erro Interno</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
           .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .error { color: #e74c3c; }
+          .error { color: #e74c3c; font-size: 20px; margin-bottom: 16px; }
+          p { font-size: 16px; line-height: 1.5; color: #333; }
         </style>
       </head>
       <body>
