@@ -190,32 +190,66 @@ serve(async (req) => {
       .eq('token', token);
 
     // Return success page
-    return new Response(`
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <title>Agendamento Confirmado</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; margin: 0; }
-          .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .success { color: #27ae60; font-size: 20px; margin-bottom: 16px; }
-          p { font-size: 16px; line-height: 1.5; color: #333; }
-          small { color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h2 class="success">✅ Agendamento Confirmado!</h2>
-          <p>Seu agendamento foi confirmado com sucesso. Obrigado!</p>
-          <p><small>Você pode fechar esta janela.</small></p>
-        </div>
-      </body>
-      </html>
-    `, {
+    const successHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendamento Confirmado</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+      text-align: center; 
+      padding: 50px 20px; 
+      background: #f5f5f5; 
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container { 
+      max-width: 400px; 
+      width: 100%;
+      background: white; 
+      padding: 30px; 
+      border-radius: 10px; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+    }
+    .success { 
+      color: #27ae60; 
+      font-size: 20px; 
+      margin-bottom: 16px; 
+      font-weight: 600;
+    }
+    p { 
+      font-size: 16px; 
+      line-height: 1.5; 
+      color: #333; 
+      margin: 16px 0;
+    }
+    small { 
+      color: #666; 
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="success">✅ Agendamento Confirmado!</h2>
+    <p>Seu agendamento foi confirmado com sucesso. Obrigado!</p>
+    <p><small>Você pode fechar esta janela.</small></p>
+  </div>
+</body>
+</html>`;
+    
+    return new Response(successHtml, {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'text/html; charset=UTF-8'
+      },
     });
 
   } catch (error) {
