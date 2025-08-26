@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { type Agendamento } from '@/hooks/useSupabase';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const useWhatsAppConfirmation = () => {
@@ -82,7 +82,7 @@ export const useWhatsAppConfirmation = () => {
       const clientPhone = formatPhoneNumber(agendamento.client_phone);
       
       // Format date
-      const formattedDate = format(new Date(agendamento.date), 'dd/MM/yyyy', { locale: ptBR });
+      const formattedDate = format(parseISO(agendamento.date), 'dd/MM/yyyy', { locale: ptBR });
       
       // Confirmation URL
       const confirmationUrl = `https://dyauabkczodvhsgyqouq.supabase.co/functions/v1/confirm-appointment?token=${token}`;
