@@ -23,6 +23,7 @@ const Financeiro = () => {
   const { 
     transacoes, 
     profissionais,
+    clientes,
     selectedProfessionalId,
     setSelectedProfessionalId,
     selectedMonth,
@@ -428,6 +429,7 @@ const Financeiro = () => {
           isOpen={isAddModalOpen}
           onClose={handleCloseAddModal}
           profissionais={profissionais}
+          clientes={clientes}
           onSave={handleSaveNewTransacao}
           loading={loading}
         />
