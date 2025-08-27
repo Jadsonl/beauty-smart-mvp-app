@@ -37,7 +37,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     valor: '',
     data: new Date(),
     professional_id: 'despesa-nenhum-profissional',
-    client_id: ''
+    client_id: 'no-client'
   });
 
   // Filtrar profissionais válidos para evitar valores vazios
@@ -55,7 +55,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       valor: parseFloat(formData.valor),
       data: format(formData.data, 'yyyy-MM-dd'),
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
-      client_id: formData.client_id || null,
+      client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null
     };
 
@@ -69,7 +69,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
         valor: '',
         data: new Date(),
         professional_id: 'despesa-nenhum-profissional',
-        client_id: ''
+        client_id: 'no-client'
       });
       onClose();
     }
@@ -84,7 +84,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       valor: '',
       data: new Date(),
       professional_id: 'despesa-nenhum-profissional',
-      client_id: ''
+      client_id: 'no-client'
     });
     onClose();
   };
@@ -137,7 +137,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
                   <SelectValue placeholder="Selecione um cliente (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum cliente</SelectItem>
+                  <SelectItem value="no-client">Nenhum cliente</SelectItem>
                   {clientes.map((cliente) => (
                     <SelectItem key={cliente.id} value={cliente.id}>
                       {cliente.nome}
