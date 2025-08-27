@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSupabase, type Transacao, type Profissional, type Cliente } from '@/hooks/useSupabase';
+import { useSupabase, type Transacao, type Profissional } from '@/hooks/useSupabase';
 import { toast } from 'sonner';
 
 export const useFinanceiro = () => {
@@ -10,28 +10,22 @@ export const useFinanceiro = () => {
     updateTransacao,
     deleteTransacao,
     getProfissionais,
-    getClientes,
     loading 
   } = useSupabase();
   
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [serviceFilter, setServiceFilter] = useState<string>('');
 
-  // Carregar profissionais e clientes
+  // Carregar profissionais
   useEffect(() => {
-    const loadData = async () => {
+    const loadProfissionais = async () => {
       console.log('useFinanceiro: Carregando profissionais...');
       try {
-        const [profissionaisData, clientesData] = await Promise.all([
-          getProfissionais(),
-          getClientes()
-        ]);
-        
+        const profissionaisData = await getProfissionais();
         // Filtrar rigorosamente para evitar valores vazios que quebram o Select
         const validProfissionais = (profissionaisData || []).filter(profissional => 
           profissional && 
@@ -42,20 +36,16 @@ export const useFinanceiro = () => {
           typeof profissional.id === 'string' &&
           typeof profissional.name === 'string'
         );
-        
         setProfissionais(validProfissionais);
-        setClientes(clientesData || []);
-        
         console.log('useFinanceiro: Profissionais válidos carregados:', validProfissionais.length);
-        console.log('useFinanceiro: Clientes carregados:', clientesData?.length || 0);
       } catch (error) {
-        console.error('useFinanceiro: Erro ao carregar dados:', error);
-        toast.error('Erro ao carregar dados');
+        console.error('useFinanceiro: Erro ao carregar profissionais:', error);
+        toast.error('Erro ao carregar profissionais');
       }
     };
 
-    loadData();
-  }, [getProfissionais, getClientes]);
+    loadProfissionais();
+  }, [getProfissionais]);
 
   // Carregar transações (recarrega quando os filtros mudam)
   useEffect(() => {
@@ -149,7 +139,6 @@ export const useFinanceiro = () => {
   return {
     transacoes,
     profissionais,
-    clientes,
     selectedProfessionalId,
     setSelectedProfessionalId,
     selectedMonth,

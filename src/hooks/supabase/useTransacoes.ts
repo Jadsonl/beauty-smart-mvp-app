@@ -7,13 +7,11 @@ export interface Transacao {
   id: string;
   user_id: string;
   tipo: 'receita' | 'despesa';
-  nome?: string;
   descricao: string;
   valor: number;
   data: string;
   agendamento_id?: string;
   professional_id?: string;
-  client_id?: string;
   created_at?: string;
 }
 
@@ -71,13 +69,11 @@ export const useTransacoes = () => {
         id: item.id,
         user_id: item.user_id,
         tipo: item.tipo as "receita" | "despesa",
-        nome: item.nome,
         descricao: item.descricao,
         valor: item.valor,
         data: item.data,
         agendamento_id: item.agendamento_id,
         professional_id: item.professional_id,
-        client_id: item.client_id,
         created_at: item.created_at
       }));
       
@@ -137,12 +133,10 @@ export const useTransacoes = () => {
         .from('transactions')
         .update({
           tipo: transacaoData.tipo,
-          nome: transacaoData.nome,
           descricao: transacaoData.descricao,
           valor: transacaoData.valor,
           data: transacaoData.data,
-          professional_id: transacaoData.professional_id,
-          client_id: transacaoData.client_id
+          professional_id: transacaoData.professional_id
         })
         .eq('id', id)
         .eq('user_id', user.id);

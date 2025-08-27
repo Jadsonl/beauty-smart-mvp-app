@@ -32,7 +32,6 @@ export const ProductForm = ({
     category: '',
     unit: '',
     min_stock_level: 0,
-    supplier_name: '',
   });
   const [stockQuantity, setStockQuantity] = useState<number>(0);
 
@@ -46,7 +45,6 @@ export const ProductForm = ({
         category: editingProduct.category || '',
         unit: editingProduct.unit || '',
         min_stock_level: editingProduct.min_stock_level || 0,
-        supplier_name: editingProduct.supplier_name || '',
       });
       setStockQuantity(initialQuantity || 0);
     } else {
@@ -57,7 +55,6 @@ export const ProductForm = ({
         category: '',
         unit: '',
         min_stock_level: 0,
-        supplier_name: '',
       });
       setStockQuantity(0);
     }
@@ -143,15 +140,6 @@ export const ProductForm = ({
                 placeholder="Ex: Cabelo"
               />
             </div>
-          </div>
-          <div>
-            <Label htmlFor="supplier">Nome do Fornecedor</Label>
-            <Input
-              id="supplier"
-              value={formData.supplier_name}
-              onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
-              placeholder="Ex: Distribuidora ABC"
-            />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>

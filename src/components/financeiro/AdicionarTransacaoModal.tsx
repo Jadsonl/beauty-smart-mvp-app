@@ -11,13 +11,12 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { type Transacao, type Profissional, type Cliente } from '@/hooks/useSupabase';
+import { type Transacao, type Profissional } from '@/hooks/useSupabase';
 
 interface AdicionarTransacaoModalProps {
   isOpen: boolean;
   onClose: () => void;
   profissionais: Profissional[];
-  clientes: Cliente[];
   onSave: (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => Promise<boolean>;
   loading: boolean;
 }
@@ -26,18 +25,15 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
   isOpen,
   onClose,
   profissionais,
-  clientes,
   onSave,
   loading
 }) => {
   const [formData, setFormData] = useState({
     tipo: 'receita' as 'receita' | 'despesa',
-    nome: '',
     descricao: '',
     valor: '',
     data: new Date(),
-    professional_id: 'despesa-nenhum-profissional',
-    client_id: 'no-client'
+    professional_id: 'despesa-nenhum-profissional'
   });
 
   // Filtrar profissionais válidos para evitar valores vazios
@@ -50,12 +46,10 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
 
     const transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'> = {
       tipo: formData.tipo,
-      nome: formData.nome || null,
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
       data: format(formData.data, 'yyyy-MM-dd'),
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
-      client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null
     };
 
@@ -64,12 +58,10 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       // Resetar formulário
       setFormData({
         tipo: 'receita',
-        nome: '',
         descricao: '',
         valor: '',
         data: new Date(),
-        professional_id: 'despesa-nenhum-profissional',
-        client_id: 'no-client'
+        professional_id: 'despesa-nenhum-profissional'
       });
       onClose();
     }
@@ -79,12 +71,10 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     // Resetar formulário ao fechar
     setFormData({
       tipo: 'receita',
-      nome: '',
       descricao: '',
       valor: '',
       data: new Date(),
-      professional_id: 'despesa-nenhum-profissional',
-      client_id: 'no-client'
+      professional_id: 'despesa-nenhum-profissional'
     });
     onClose();
   };
@@ -113,49 +103,14 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
             </Select>
           </div>
 
-          {formData.tipo === 'despesa' && (
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome da Despesa</Label>
-              <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Digite o nome da despesa"
-                required
-              />
-            </div>
-          )}
-
-          {formData.tipo === 'receita' && (
-            <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente</Label>
-              <Select
-                value={formData.client_id}
-                onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="no-client">Nenhum cliente</SelectItem>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           <div className="space-y-2">
-            <Label htmlFor="descricao">{formData.tipo === 'despesa' ? 'Descrição (Opcional)' : 'Descrição'}</Label>
+            <Label htmlFor="descricao">Descrição</Label>
             <Input
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder={formData.tipo === 'despesa' ? 'Detalhes adicionais (opcional)' : 'Digite a descrição do lançamento'}
-              required={formData.tipo === 'receita'}
+              placeholder="Digite a descrição do lançamento"
+              required
             />
           </div>
 

@@ -12,7 +12,6 @@ export interface Produto {
   category?: string;
   unit?: string;
   min_stock_level?: number;
-  supplier_name?: string;
   created_at?: string;
 }
 
