@@ -168,17 +168,25 @@ const Clientes = () => {
 
   const handleDelete = async (cliente: Cliente) => {
     if (window.confirm(`Tem certeza que deseja excluir ${cliente.nome}?`)) {
-      const success = await deleteCliente(cliente.id);
-      if (success) {
-        toast({
-          title: "Sucesso",
-          description: "Cliente excluído com sucesso!"
-        });
-        loadClientes(); // Recarregar a lista
-      } else {
+      try {
+        const success = await deleteCliente(cliente.id);
+        if (success) {
+          toast({
+            title: "Sucesso",
+            description: "Cliente excluído com sucesso!"
+          });
+          loadClientes(); // Recarregar a lista
+        } else {
+          toast({
+            title: "Erro",
+            description: "Erro ao excluir cliente. Tente novamente.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
         toast({
           title: "Erro",
-          description: "Erro ao excluir cliente. Tente novamente.",
+          description: error instanceof Error ? error.message : "Erro ao excluir cliente. Tente novamente.",
           variant: "destructive"
         });
       }

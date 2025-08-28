@@ -120,6 +120,24 @@ export const useServicos = () => {
     console.log('deleteServico: Deletando serviço', id, 'para user_id:', user.id);
     
     try {
+      // Verificar se há agendamentos vinculados a este serviço
+      const { data: appointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('service_id', id)
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (checkError) {
+        console.error('deleteServico: Erro ao verificar dependências:', checkError);
+        return false;
+      }
+
+      if (appointments && appointments.length > 0) {
+        console.error('deleteServico: Serviço possui agendamentos vinculados');
+        throw new Error('Este serviço possui agendamentos vinculados. Remova os agendamentos primeiro antes de deletar o serviço.');
+      }
+
       const { error } = await supabase
         .from('services')
         .delete()
@@ -135,6 +153,10 @@ export const useServicos = () => {
       return true;
     } catch (error) {
       console.error('deleteServico: Erro inesperado:', error);
+      // Re-throw error so it can be handled by the calling component
+      if (error instanceof Error) {
+        throw error;
+      }
       return false;
     } finally {
       setLoading(false);

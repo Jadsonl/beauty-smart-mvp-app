@@ -53,7 +53,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       nome: formData.nome || null,
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
-      data: format(formData.data, 'yyyy-MM-dd'),
+      data: formData.data.toISOString().split('T')[0], // Fix: Use toISOString to avoid timezone issues
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null
@@ -128,7 +128,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
 
           {formData.tipo === 'receita' && (
             <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente</Label>
+              <Label htmlFor="cliente">Cliente (Opcional)</Label>
               <Select
                 value={formData.client_id}
                 onValueChange={(value) => setFormData({ ...formData, client_id: value })}
@@ -137,7 +137,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
                   <SelectValue placeholder="Selecione um cliente (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no-client">Nenhum cliente</SelectItem>
+                  <SelectItem value="no-client">Nenhum cliente (venda de produto/serviço geral)</SelectItem>
                   {clientes.map((cliente) => (
                     <SelectItem key={cliente.id} value={cliente.id}>
                       {cliente.nome}
@@ -149,12 +149,18 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">{formData.tipo === 'despesa' ? 'Descrição (Opcional)' : 'Descrição'}</Label>
+            <Label htmlFor="descricao">
+              {formData.tipo === 'despesa' ? 'Descrição (Opcional)' : 'Descrição/Serviço'}
+            </Label>
             <Input
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder={formData.tipo === 'despesa' ? 'Detalhes adicionais (opcional)' : 'Digite a descrição do lançamento'}
+              placeholder={
+                formData.tipo === 'despesa' 
+                  ? 'Detalhes adicionais (opcional)' 
+                  : 'Ex: Corte de cabelo, Manicure, etc.'
+              }
               required={formData.tipo === 'receita'}
             />
           </div>

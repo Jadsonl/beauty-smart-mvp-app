@@ -124,17 +124,25 @@ const Servicos = () => {
 
   const handleDelete = async (servico: Servico) => {
     if (window.confirm(`Tem certeza que deseja excluir o serviço "${servico.nome}"?`)) {
-      const success = await deleteServico(servico.id);
-      if (success) {
-        toast({
-          title: "Sucesso",
-          description: "Serviço excluído com sucesso!"
-        });
-        loadServicos(); // Recarregar a lista
-      } else {
+      try {
+        const success = await deleteServico(servico.id);
+        if (success) {
+          toast({
+            title: "Sucesso",
+            description: "Serviço excluído com sucesso!"
+          });
+          loadServicos(); // Recarregar a lista
+        } else {
+          toast({
+            title: "Erro",
+            description: "Erro ao excluir serviço. Tente novamente.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
         toast({
           title: "Erro",
-          description: "Erro ao excluir serviço. Tente novamente.",
+          description: error instanceof Error ? error.message : "Erro ao excluir serviço. Tente novamente.",
           variant: "destructive"
         });
       }

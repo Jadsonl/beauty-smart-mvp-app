@@ -161,6 +161,37 @@ export const useClientes = () => {
     console.log('deleteCliente: Deletando cliente', id, 'para user_id:', user.id);
     
     try {
+      // Verificar se há transações vinculadas a este cliente
+      const { data: transactions, error: checkError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('client_id', id)
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (checkError) {
+        console.error('deleteCliente: Erro ao verificar dependências:', checkError);
+        return false;
+      }
+
+      if (transactions && transactions.length > 0) {
+        console.error('deleteCliente: Cliente possui transações vinculadas');
+        throw new Error('Este cliente possui transações financeiras vinculadas. Remova as transações primeiro antes de deletar o cliente.');
+      }
+
+      // Verificar se há agendamentos vinculados
+      const { data: appointments, error: appointmentError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('client_email', (await supabase.from('clients').select('email').eq('id', id).single()).data?.email)
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (!appointmentError && appointments && appointments.length > 0) {
+        console.error('deleteCliente: Cliente possui agendamentos vinculados');
+        throw new Error('Este cliente possui agendamentos vinculados. Remova os agendamentos primeiro antes de deletar o cliente.');
+      }
+
       const { error } = await supabase
         .from('clients')
         .delete()
@@ -176,6 +207,10 @@ export const useClientes = () => {
       return true;
     } catch (error) {
       console.error('deleteCliente: Erro inesperado:', error);
+      // Re-throw error so it can be handled by the calling component
+      if (error instanceof Error) {
+        throw error;
+      }
       return false;
     } finally {
       setLoading(false);
