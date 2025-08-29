@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useClientes, type Cliente } from '@/hooks/supabase/useClientes';
-import { parseISO } from 'date-fns';
+import { parseISO, parse } from 'date-fns';
 
 export const useAniversariantes = () => {
   const { getClientes, getAniversariantes } = useClientes();
@@ -21,9 +21,13 @@ export const useAniversariantes = () => {
       const aniversariantesHoje = clientes.filter(cliente => {
         if (!cliente.date_of_birth) return false;
         
-        const nascimento = parseISO(cliente.date_of_birth);
-        const diaNascimento = nascimento.getDate();
-        const mesNascimento = nascimento.getMonth() + 1;
+        // Parse date without timezone issues
+        const match = cliente.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return false;
+        
+        const [, year, month, day] = match;
+        const diaNascimento = parseInt(day, 10);
+        const mesNascimento = parseInt(month, 10);
         
         return diaNascimento === diaHoje && mesNascimento === mesHoje;
       });

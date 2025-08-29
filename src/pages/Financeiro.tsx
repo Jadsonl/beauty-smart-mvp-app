@@ -66,7 +66,14 @@ const Financeiro = () => {
     const professional = profissionais.find(p => p.id === transacao.professional_id);
     const professionalMatch = professional?.name.toLowerCase().includes(searchTerm) || false;
     
-    return descricaoMatch || professionalMatch;
+    // Find client name for this transaction
+    const client = clientes.find(c => c.id === transacao.client_id);
+    const clientMatch = client?.nome.toLowerCase().includes(searchTerm) || false;
+    
+    // Also search by date
+    const dateMatch = format(new Date(transacao.data), 'dd/MM/yyyy', { locale: ptBR }).includes(searchTerm);
+    
+    return descricaoMatch || professionalMatch || clientMatch || dateMatch;
   });
 
   const handleEditTransacao = (transacao: Transacao) => {
@@ -239,7 +246,7 @@ const Financeiro = () => {
     <Layout>
       <div className="container mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Financeiro</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Financeiro</h1>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
               <span>Exportar PDF</span>
@@ -315,13 +322,13 @@ const Financeiro = () => {
               
               {/* Busca por Serviço ou Profissional */}
               <div className="space-y-2">
-                <Label htmlFor="search-filter">Buscar por Serviço ou Profissional</Label>
+                <Label htmlFor="search-filter">Buscar por Serviço, Cliente, Profissional ou Data</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     id="search-filter"
                     type="text"
-                    placeholder="Digite o nome do serviço ou profissional..."
+                    placeholder="Digite nome, serviço, cliente, profissional ou data (dd/mm/aaaa)..."
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
                     className="pl-10"
@@ -332,7 +339,7 @@ const Financeiro = () => {
             
             {(selectedProfessionalId !== 'all' || searchFilter) && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600">Filtros ativos:</span>
+                <span className="text-sm text-muted-foreground">Filtros ativos:</span>
                 {selectedProfessionalId !== 'all' && (
                   <Badge variant="secondary">
                     Profissional: {profissionais.find(p => p.id === selectedProfessionalId)?.name || 'N/A'}
@@ -366,22 +373,29 @@ const Financeiro = () => {
             <div className="space-y-4">
               {filteredTransacoes.map((transacao) => {
                 const professional = profissionais.find(p => p.id === transacao.professional_id);
+                const client = clientes.find(c => c.id === transacao.client_id);
                 const showProfessional = transacao.tipo === 'receita' && professional && professional.id !== '' && professional.name !== '';
                 const professionalName = showProfessional ? professional.name : '';
+                const clientName = client?.nome || '';
 
                 return (
-                  <div key={transacao.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-2 hover:bg-gray-50">
+                  <div key={transacao.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-2 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <Badge variant={transacao.tipo === 'receita' ? 'default' : 'destructive'}>
                           {transacao.tipo === 'receita' ? 'Receita' : 'Despesa'}
                         </Badge>
-                        <span className="font-medium text-sm sm:text-base">{transacao.descricao}</span>
+                        <span className="font-medium text-sm sm:text-base text-foreground">
+                          {transacao.tipo === 'despesa' && transacao.nome ? transacao.nome : transacao.descricao}
+                        </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                         <span>{format(new Date(transacao.data), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                        {/* Aqui mostra o nome se existir, caso contrário, nada */}
-                        <span className="font-medium text-gray-800">{professionalName}</span>
+                        {professionalName && <span className="font-medium text-foreground">Profissional: {professionalName}</span>}
+                        {clientName && <span className="font-medium text-foreground">Cliente: {clientName}</span>}
+                        {transacao.tipo === 'despesa' && transacao.descricao !== transacao.nome && (
+                          <span className="text-muted-foreground">Obs: {transacao.descricao}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -420,6 +434,7 @@ const Financeiro = () => {
           onClose={handleCloseEditModal}
           transacao={editingTransacao}
           profissionais={profissionais}
+          clientes={clientes}
           onSave={handleSaveTransacao}
           loading={loading}
         />

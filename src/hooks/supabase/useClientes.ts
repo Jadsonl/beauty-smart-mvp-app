@@ -71,11 +71,18 @@ export const useClientes = () => {
         return [];
       }
       
-      // Filtrar pelo mês no frontend
+      // Filtrar pelo mês no frontend usando parse sem UTC
       const aniversariantes = (data || []).filter(cliente => {
         if (!cliente.date_of_birth) return false;
-        const birthMonth = new Date(cliente.date_of_birth).getMonth() + 1;
-        return birthMonth === currentMonth;
+        
+        // Parse date without timezone issues
+        const match = cliente.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return false;
+        
+        const [, year, month, day] = match;
+        const mesNascimento = parseInt(month, 10);
+        
+        return mesNascimento === currentMonth;
       });
       
       console.log('getAniversariantes: Aniversariantes encontrados:', aniversariantes);
@@ -179,17 +186,32 @@ export const useClientes = () => {
         throw new Error('Este cliente possui transações financeiras vinculadas. Remova as transações primeiro antes de deletar o cliente.');
       }
 
-      // Verificar se há agendamentos vinculados
-      const { data: appointments, error: appointmentError } = await supabase
-        .from('appointments')
-        .select('id')
-        .eq('client_email', (await supabase.from('clients').select('email').eq('id', id).single()).data?.email)
+      // Buscar email do cliente primeiro
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('email')
+        .eq('id', id)
         .eq('user_id', user.id)
-        .limit(1);
+        .single();
 
-      if (!appointmentError && appointments && appointments.length > 0) {
-        console.error('deleteCliente: Cliente possui agendamentos vinculados');
-        throw new Error('Este cliente possui agendamentos vinculados. Remova os agendamentos primeiro antes de deletar o cliente.');
+      if (clientError) {
+        console.error('deleteCliente: Erro ao buscar dados do cliente:', clientError);
+        return false;
+      }
+
+      // Verificar se há agendamentos vinculados se o cliente tem email
+      if (clientData?.email) {
+        const { data: appointments, error: appointmentError } = await supabase
+          .from('appointments')
+          .select('id')
+          .eq('client_email', clientData.email)
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (!appointmentError && appointments && appointments.length > 0) {
+          console.error('deleteCliente: Cliente possui agendamentos vinculados');
+          throw new Error('Este cliente possui agendamentos vinculados. Remova os agendamentos primeiro antes de deletar o cliente.');
+        }
       }
 
       const { error } = await supabase

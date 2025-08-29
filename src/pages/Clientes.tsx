@@ -201,8 +201,8 @@ const Clientes = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
-            <p className="text-gray-600 mt-1">Gerencie a base de clientes do seu estabelecimento</p>
+            <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
+            <p className="text-muted-foreground mt-1">Gerencie a base de clientes do seu estabelecimento</p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -306,15 +306,15 @@ const Clientes = () => {
           <CardContent>
             {loading ? (
               <div className="text-center py-12">
-                <p className="text-gray-600">Carregando clientes...</p>
+                <p className="text-muted-foreground">Carregando clientes...</p>
               </div>
             ) : clientes.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-6xl mb-4 block">👥</span>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-foreground mb-2">
                   Nenhum cliente cadastrado
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-muted-foreground mb-6">
                   Comece criando seu primeiro cliente!
                 </p>
                 <Button 
@@ -331,10 +331,10 @@ const Clientes = () => {
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                          <h3 className="font-semibold text-lg text-foreground mb-1">
                             {cliente.nome}
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             Cadastrado em {format(new Date(cliente.created_at!), 'dd/MM/yyyy', { locale: ptBR })}
                           </p>
                         </div>
@@ -359,19 +359,19 @@ const Clientes = () => {
                       
                       <div className="space-y-2">
                         {cliente.telefone && (
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <Phone className="h-4 w-4" />
                             <span>{cliente.telefone}</span>
                           </div>
                         )}
                         {cliente.email && (
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <Mail className="h-4 w-4" />
                             <span className="truncate">{cliente.email}</span>
                           </div>
                         )}
                         {cliente.date_of_birth && (
-                          <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <CalendarBirthday className="h-4 w-4" />
                             <span>
                               {/* Corrige para mostrar corretamente a data */}

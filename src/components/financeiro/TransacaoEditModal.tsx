@@ -11,13 +11,14 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { type Transacao, type Profissional } from '@/hooks/useSupabase';
+import { type Transacao, type Profissional, type Cliente } from '@/hooks/useSupabase';
 
 interface TransacaoEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   transacao: Transacao | null;
   profissionais: Profissional[];
+  clientes: Cliente[];
   onSave: (transacaoId: string, updatedData: Partial<Transacao>) => Promise<boolean>;
   loading: boolean;
 }
@@ -27,25 +28,30 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
   onClose,
   transacao,
   profissionais,
+  clientes,
   onSave,
   loading
 }) => {
   const [formData, setFormData] = useState({
     tipo: 'receita' as 'receita' | 'despesa',
+    nome: '',
     descricao: '',
     valor: '',
     data: new Date(),
-    professional_id: 'despesa-nenhum-profissional'
+    professional_id: 'despesa-nenhum-profissional',
+    client_id: 'no-client'
   });
 
   useEffect(() => {
     if (transacao) {
       setFormData({
         tipo: transacao.tipo,
+        nome: transacao.nome || '',
         descricao: transacao.descricao,
         valor: transacao.valor.toString(),
         data: new Date(transacao.data),
-        professional_id: transacao.professional_id || 'despesa-nenhum-profissional'
+        professional_id: transacao.professional_id || 'despesa-nenhum-profissional',
+        client_id: transacao.client_id || 'no-client'
       });
     }
   }, [transacao]);
@@ -61,10 +67,12 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
 
     const updatedData: Partial<Transacao> = {
       tipo: formData.tipo,
+      nome: formData.nome || null,
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
-      data: format(formData.data, 'yyyy-MM-dd'),
-      professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id
+      data: formData.data.toLocaleDateString('en-CA'), // Format as YYYY-MM-DD without timezone issues
+      professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
+      client_id: formData.client_id === 'no-client' ? null : formData.client_id
     };
 
     const success = await onSave(transacao.id, updatedData);
@@ -103,14 +111,55 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
             </Select>
           </div>
 
+          {formData.tipo === 'despesa' && (
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome da Despesa</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                placeholder="Digite o nome da despesa"
+                required
+              />
+            </div>
+          )}
+
+          {formData.tipo === 'receita' && (
+            <div className="space-y-2">
+              <Label htmlFor="cliente">Cliente (Opcional)</Label>
+              <Select
+                value={formData.client_id}
+                onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um cliente (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="no-client">Nenhum cliente (venda de produto/serviço geral)</SelectItem>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.id}>
+                      {cliente.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">
+              {formData.tipo === 'despesa' ? 'Descrição (Opcional)' : 'Descrição/Serviço'}
+            </Label>
             <Input
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder="Digite a descrição"
-              required
+              placeholder={
+                formData.tipo === 'despesa' 
+                  ? 'Detalhes adicionais (opcional)' 
+                  : 'Ex: Corte de cabelo, Manicure, etc.'
+              }
+              required={formData.tipo === 'receita'}
             />
           </div>
 
