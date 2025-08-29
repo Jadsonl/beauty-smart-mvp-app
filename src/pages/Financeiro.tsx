@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
-import { DateFilters } from '@/components/financeiro/DateFilters';
+import { DateRangeFilter } from '@/components/financeiro/DateRangeFilter';
 import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
 import { AdicionarTransacaoModal } from '@/components/financeiro/AdicionarTransacaoModal';
 import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationModal';
@@ -26,10 +26,10 @@ const Financeiro = () => {
     clientes,
     selectedProfessionalId,
     setSelectedProfessionalId,
-    selectedMonth,
-    setSelectedMonth,
-    selectedYear,
-    setSelectedYear,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
     serviceFilter,
     setServiceFilter,
     loading,
@@ -313,11 +313,20 @@ const Financeiro = () => {
                 profissionais={profissionais}
               />
               
-              <DateFilters
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                onMonthChange={setSelectedMonth}
-                onYearChange={setSelectedYear}
+              
+              <DateRangeFilter
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onClearFilters={() => {
+                  setStartDate(undefined);
+                  setEndDate(undefined);
+                }}
+                onShowAll={() => {
+                  setStartDate(undefined);
+                  setEndDate(undefined);
+                }}
               />
               
               {/* Busca por Serviço ou Profissional */}
@@ -349,10 +358,10 @@ const Financeiro = () => {
                   <Badge variant="secondary">
                     Busca: "{searchFilter}"
                   </Badge>
-                )}
-                <Badge variant="secondary">
-                  Período: {format(new Date(selectedYear, selectedMonth - 1), 'MMMM/yyyy', { locale: ptBR })}
-                </Badge>
+                 )}
+                 <Badge variant="secondary">
+                   Filtros de data ativados
+                 </Badge>
               </div>
             )}
           </CardContent>

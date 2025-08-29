@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
 
 export interface Transacao {
   id: string;
@@ -19,8 +20,8 @@ export interface Transacao {
 
 interface TransacaoFilters {
   professionalId?: string;
-  month?: number;
-  year?: number;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export const useTransacoes = () => {
@@ -47,15 +48,17 @@ export const useTransacoes = () => {
         query = query.eq('professional_id', filters.professionalId);
       }
       
-      // Adicionar filtros de mês e ano se especificados
-      if (filters.month && filters.year) {
-        const startDate = new Date(filters.year, filters.month - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(filters.year, filters.month, 0).toISOString().split('T')[0];
-        query = query.gte('data', startDate).lte('data', endDate);
-      } else if (filters.year) {
-        const startDate = new Date(filters.year, 0, 1).toISOString().split('T')[0];
-        const endDate = new Date(filters.year, 11, 31).toISOString().split('T')[0];
-        query = query.gte('data', startDate).lte('data', endDate);
+      // Adicionar filtros de data se especificados
+      if (filters.startDate && filters.endDate) {
+        const startDateStr = format(filters.startDate, 'yyyy-MM-dd');
+        const endDateStr = format(filters.endDate, 'yyyy-MM-dd');
+        query = query.gte('data', startDateStr).lte('data', endDateStr);
+      } else if (filters.startDate) {
+        const startDateStr = format(filters.startDate, 'yyyy-MM-dd');
+        query = query.gte('data', startDateStr);
+      } else if (filters.endDate) {
+        const endDateStr = format(filters.endDate, 'yyyy-MM-dd');
+        query = query.lte('data', endDateStr);
       }
       
       const { data, error } = await query.order('data', { ascending: false });

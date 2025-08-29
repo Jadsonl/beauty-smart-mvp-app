@@ -18,9 +18,9 @@ export const useFinanceiro = () => {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>('all');
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [serviceFilter, setServiceFilter] = useState<string>('');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
 
   // Carregar profissionais e clientes
   useEffect(() => {
@@ -62,14 +62,14 @@ export const useFinanceiro = () => {
     const loadTransacoes = async () => {
       console.log('useFinanceiro: Carregando transações com filtros:', {
         professionalId: selectedProfessionalId,
-        month: selectedMonth,
-        year: selectedYear
+        startDate,
+        endDate
       });
       try {
         const filters = {
           professionalId: selectedProfessionalId,
-          month: selectedMonth,
-          year: selectedYear
+          startDate,
+          endDate
         };
         const transacoesData = await getTransacoes(filters);
         setTransacoes(transacoesData || []);
@@ -81,7 +81,7 @@ export const useFinanceiro = () => {
     };
 
     loadTransacoes();
-  }, [getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
+  }, [getTransacoes, selectedProfessionalId, startDate, endDate]);
 
   const handleAddTransacao = useCallback(async (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => {
     console.log('useFinanceiro: Adicionando transação:', transacaoData);
@@ -92,8 +92,8 @@ export const useFinanceiro = () => {
       // Recarregar transações
       const filters = {
         professionalId: selectedProfessionalId,
-        month: selectedMonth,
-        year: selectedYear
+        startDate,
+        endDate
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -102,7 +102,7 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [addTransacao, getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
+  }, [addTransacao, getTransacoes, selectedProfessionalId, startDate, endDate]);
 
   const handleUpdateTransacao = useCallback(async (id: string, transacaoData: Partial<Transacao>) => {
     console.log('useFinanceiro: Atualizando transação:', id, transacaoData);
@@ -113,8 +113,8 @@ export const useFinanceiro = () => {
       // Recarregar transações para manter consistência
       const filters = {
         professionalId: selectedProfessionalId,
-        month: selectedMonth,
-        year: selectedYear
+        startDate,
+        endDate
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -123,7 +123,7 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [updateTransacao, getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
+  }, [updateTransacao, getTransacoes, selectedProfessionalId, startDate, endDate]);
 
   const handleDeleteTransacao = useCallback(async (id: string) => {
     console.log('useFinanceiro: Excluindo transação:', id);
@@ -134,8 +134,8 @@ export const useFinanceiro = () => {
       // Recarregar transações para manter consistência
       const filters = {
         professionalId: selectedProfessionalId,
-        month: selectedMonth,
-        year: selectedYear
+        startDate,
+        endDate
       };
       const transacoesData = await getTransacoes(filters);
       setTransacoes(transacoesData || []);
@@ -144,7 +144,7 @@ export const useFinanceiro = () => {
     }
     
     return success;
-  }, [deleteTransacao, getTransacoes, selectedProfessionalId, selectedMonth, selectedYear]);
+  }, [deleteTransacao, getTransacoes, selectedProfessionalId, startDate, endDate]);
 
   return {
     transacoes,
@@ -152,10 +152,10 @@ export const useFinanceiro = () => {
     clientes,
     selectedProfessionalId,
     setSelectedProfessionalId,
-    selectedMonth,
-    setSelectedMonth,
-    selectedYear,
-    setSelectedYear,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
     serviceFilter,
     setServiceFilter,
     loading,

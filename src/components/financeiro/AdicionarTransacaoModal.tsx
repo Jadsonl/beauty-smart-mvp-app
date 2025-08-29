@@ -53,7 +53,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       nome: formData.nome || null,
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
-      data: formData.data.toLocaleDateString('en-CA'), // Format as YYYY-MM-DD without timezone issues
+      data: format(formData.data, 'yyyy-MM-dd'), // Format as YYYY-MM-DD without timezone issues
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null

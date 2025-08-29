@@ -73,11 +73,23 @@ const Dashboard = () => {
           const currentMonth = new Date().getMonth() + 1;
           const aniversariantesDoMes = (clientesData || []).filter(cliente => {
             if (!cliente.date_of_birth) return false;
-            const birthMonth = new Date(cliente.date_of_birth).getMonth() + 1;
-            return birthMonth === currentMonth;
+            
+            // Parse date without timezone issues
+            const match = cliente.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!match) return false;
+            
+            const [, year, month, day] = match;
+            const mesNascimento = parseInt(month, 10);
+            
+            return mesNascimento === currentMonth;
           }).sort((a, b) => {
-            const dayA = new Date(a.date_of_birth).getDate();
-            const dayB = new Date(b.date_of_birth).getDate();
+            // Parse dates without timezone issues for sorting
+            const matchA = a.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const matchB = b.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!matchA || !matchB) return 0;
+            
+            const dayA = parseInt(matchA[3], 10);
+            const dayB = parseInt(matchB[3], 10);
             return dayA - dayB;
           });
           
@@ -299,7 +311,15 @@ const Dashboard = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm sm:text-base truncate dark:text-white">{cliente.nome}</p>
                         <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                          {format(new Date(cliente.date_of_birth), "dd 'de' MMMM", { locale: ptBR })}
+                          {(() => {
+                            // Parse date without timezone issues
+                            const match = cliente.date_of_birth.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                            if (!match) return 'Data inválida';
+                            
+                            const [, year, month, day] = match;
+                            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            return format(date, "dd 'de' MMMM", { locale: ptBR });
+                          })()}
                         </p>
                       </div>
                       <div className="text-right">
