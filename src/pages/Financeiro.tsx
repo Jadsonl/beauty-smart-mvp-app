@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Search, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useFinanceiro } from '@/hooks/useFinanceiro';
+import { useSupabase } from '@/hooks/useSupabase';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
 import { DateRangeFilter } from '@/components/financeiro/DateRangeFilter';
 import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
@@ -38,12 +39,24 @@ const Financeiro = () => {
     handleDeleteTransacao
   } = useFinanceiro();
   
+  const { getProdutos } = useSupabase();
+  const [produtos, setProdutos] = useState([]);
+  
   const [searchFilter, setSearchFilter] = useState('');
   const [editingTransacao, setEditingTransacao] = useState<Transacao | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteTransacao, setDeleteTransacao] = useState<Transacao | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Carregar produtos
+  React.useEffect(() => {
+    const loadProdutos = async () => {
+      const produtosData = await getProdutos();
+      setProdutos(produtosData);
+    };
+    loadProdutos();
+  }, [getProdutos]);
 
   const totalReceitas = transacoes
     .filter(t => t.tipo === 'receita')
@@ -306,30 +319,32 @@ const Financeiro = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <ProfessionalFilter
-                value={selectedProfessionalId}
-                onChange={setSelectedProfessionalId}
-                profissionais={profissionais}
-              />
+            <div className="space-y-4">
+              {/* Primeira linha de filtros */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ProfessionalFilter
+                  value={selectedProfessionalId}
+                  onChange={setSelectedProfessionalId}
+                  profissionais={profissionais}
+                />
+                
+                <DateRangeFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  onClearFilters={() => {
+                    setStartDate(undefined);
+                    setEndDate(undefined);
+                  }}
+                  onShowAll={() => {
+                    setStartDate(undefined);
+                    setEndDate(undefined);
+                  }}
+                />
+              </div>
               
-              
-              <DateRangeFilter
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                onClearFilters={() => {
-                  setStartDate(undefined);
-                  setEndDate(undefined);
-                }}
-                onShowAll={() => {
-                  setStartDate(undefined);
-                  setEndDate(undefined);
-                }}
-              />
-              
-              {/* Busca por Serviço ou Profissional */}
+              {/* Segunda linha - Busca */}
               <div className="space-y-2">
                 <Label htmlFor="search-filter">Buscar por Serviço, Cliente, Profissional ou Data</Label>
                 <div className="relative">
@@ -454,6 +469,7 @@ const Financeiro = () => {
           onClose={handleCloseAddModal}
           profissionais={profissionais}
           clientes={clientes}
+          produtos={produtos}
           onSave={handleSaveNewTransacao}
           loading={loading}
         />

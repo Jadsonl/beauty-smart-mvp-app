@@ -86,6 +86,13 @@ export const ProductCard = ({ produto, inventario, onEdit, onDelete }: ProductCa
           </div>
         )}
         
+        {produto.supplier_name && (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">Fornecedor:</span>
+            <span className="font-medium text-gray-900 truncate ml-2">{produto.supplier_name}</span>
+          </div>
+        )}
+        
         {isLowStock && (
           <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-50 p-2 rounded">
             <AlertTriangle className="h-3 w-3" />

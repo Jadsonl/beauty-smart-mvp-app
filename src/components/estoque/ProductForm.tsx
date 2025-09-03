@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useSupabase, type Produto } from '@/hooks/useSupabase';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const ProductForm = ({
   onUpdateInventory,
 }: ProductFormProps) => {
   const { addProduto, updateProduto } = useSupabase();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -71,6 +73,8 @@ export const ProductForm = ({
 
     try {
       let success = false;
+      let productId = editingProduct?.id;
+      
       if (editingProduct) {
         success = await updateProduto(editingProduct.id, formData);
         // Atualizar inventário, se foi passada a função (caso de edição)
@@ -78,8 +82,54 @@ export const ProductForm = ({
           await onUpdateInventory(editingProduct.id, stockQuantity);
         }
       } else {
-        success = await addProduto(formData);
+        // Ao criar um novo produto, também precisa criar entrada no inventário e lançamento financeiro
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        // Criar produto
+        const { data: productData, error: productError } = await supabase
+          .from('products')
+          .insert({
+            user_id: user?.id,
+            ...formData
+          })
+          .select()
+          .single();
+          
+        if (productError) {
+          console.error('Erro ao criar produto:', productError);
+          success = false;
+        } else {
+          productId = productData.id;
+          success = true;
+          
+          // Criar entrada no inventário se quantidade foi informada
+          if (stockQuantity > 0) {
+            await supabase
+              .from('product_inventory')
+              .insert({
+                user_id: user?.id,
+                product_id: productId,
+                quantity: stockQuantity,
+              });
+              
+            // Criar lançamento financeiro como despesa (entrada de estoque)
+            const valorTotal = formData.price * stockQuantity;
+            await supabase
+              .from('transactions')
+              .insert({
+                user_id: user?.id,
+                tipo: 'despesa',
+                nome: `Estoque - ${formData.name}`,
+                descricao: `Entrada de estoque: ${stockQuantity} ${formData.unit || 'un'} de ${formData.name}`,
+                valor: valorTotal,
+                data: new Date().toISOString().split('T')[0],
+                professional_id: null,
+                client_id: null,
+              });
+          }
+        }
       }
+      
       if (success) {
         toast.success(editingProduct ? 'Produto atualizado com sucesso!' : 'Produto adicionado com sucesso!');
         onClose();
@@ -174,19 +224,22 @@ export const ProductForm = ({
               />
             </div>
           </div>
-          {editingProduct && (
-            <div>
-              <Label htmlFor="quantity">Quantidade em Estoque</Label>
-              <Input
-                id="quantity"
-                type="number"
-                value={stockQuantity}
-                min={0}
-                onChange={(e) => setStockQuantity(parseFloat(e.target.value) || 0)}
-                placeholder="0"
-              />
-            </div>
-          )}
+          <div>
+            <Label htmlFor="quantity">Quantidade em Estoque</Label>
+            <Input
+              id="quantity"
+              type="number"
+              value={stockQuantity}
+              min={0}
+              onChange={(e) => setStockQuantity(parseFloat(e.target.value) || 0)}
+              placeholder="0"
+            />
+            {!editingProduct && stockQuantity > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Será criado um lançamento financeiro como despesa no valor de R$ {(formData.price * stockQuantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row gap-2 pt-4">
             <Button
               onClick={handleSubmit}

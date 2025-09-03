@@ -11,13 +11,14 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { type Transacao, type Profissional, type Cliente } from '@/hooks/useSupabase';
+import { type Transacao, type Profissional, type Cliente, type Produto } from '@/hooks/useSupabase';
 
 interface AdicionarTransacaoModalProps {
   isOpen: boolean;
   onClose: () => void;
   profissionais: Profissional[];
   clientes: Cliente[];
+  produtos?: Produto[];
   onSave: (transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'>) => Promise<boolean>;
   loading: boolean;
 }
@@ -27,6 +28,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
   onClose,
   profissionais,
   clientes,
+  produtos = [],
   onSave,
   loading
 }) => {
@@ -37,7 +39,8 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     valor: '',
     data: new Date(),
     professional_id: 'despesa-nenhum-profissional',
-    client_id: 'no-client'
+    client_id: 'no-client',
+    product_id: 'no-product'
   });
 
   // Filtrar profissionais válidos para evitar valores vazios
@@ -69,7 +72,8 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
         valor: '',
         data: new Date(),
         professional_id: 'despesa-nenhum-profissional',
-        client_id: 'no-client'
+        client_id: 'no-client',
+        product_id: 'no-product'
       });
       onClose();
     }
@@ -84,9 +88,26 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       valor: '',
       data: new Date(),
       professional_id: 'despesa-nenhum-profissional',
-      client_id: 'no-client'
+      client_id: 'no-client',
+      product_id: 'no-product'
     });
     onClose();
+  };
+
+  const handleProductChange = (productId: string) => {
+    setFormData({ ...formData, product_id: productId });
+    
+    if (productId !== 'no-product') {
+      const selectedProduct = produtos.find(p => p.id === productId);
+      if (selectedProduct) {
+        setFormData(prev => ({
+          ...prev,
+          product_id: productId,
+          descricao: `Venda de produto: ${selectedProduct.name}`,
+          valor: selectedProduct.price.toString()
+        }));
+      }
+    }
   };
 
   return (
@@ -127,25 +148,47 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
           )}
 
           {formData.tipo === 'receita' && (
-            <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente (Opcional)</Label>
-              <Select
-                value={formData.client_id}
-                onValueChange={(value) => setFormData({ ...formData, client_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="no-client">Nenhum cliente (venda de produto/serviço geral)</SelectItem>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="produto">Produto do Estoque (Opcional)</Label>
+                <Select
+                  value={formData.product_id}
+                  onValueChange={handleProductChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um produto (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-product">Nenhum produto (serviço ou venda geral)</SelectItem>
+                    {produtos.map((produto) => (
+                      <SelectItem key={produto.id} value={produto.id}>
+                        {produto.name} - R$ {produto.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="cliente">Cliente (Opcional)</Label>
+                <Select
+                  value={formData.client_id}
+                  onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-client">Nenhum cliente (venda de produto/serviço geral)</SelectItem>
+                    {clientes.map((cliente) => (
+                      <SelectItem key={cliente.id} value={cliente.id}>
+                        {cliente.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
           )}
 
           <div className="space-y-2">
