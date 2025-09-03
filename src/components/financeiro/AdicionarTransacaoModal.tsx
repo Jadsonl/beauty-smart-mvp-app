@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { type Transacao, type Profissional, type Cliente, type Produto } from '@/hooks/useSupabase';
+import { useServicos, type Servico } from '@/hooks/supabase/useServicos';
 
 interface AdicionarTransacaoModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
   onSave,
   loading
 }) => {
+  const { getServicos } = useServicos();
+  const [servicos, setServicos] = useState<Servico[]>([]);
   const [formData, setFormData] = useState({
     tipo: 'receita' as 'receita' | 'despesa',
     nome: '',
@@ -40,8 +43,20 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     data: new Date(),
     professional_id: 'despesa-nenhum-profissional',
     client_id: 'no-client',
-    product_id: 'no-product'
+    product_id: 'no-product',
+    service_id: 'no-service'
   });
+
+  // Carregar serviços
+  React.useEffect(() => {
+    const loadServicos = async () => {
+      const servicosData = await getServicos();
+      setServicos(servicosData);
+    };
+    if (isOpen) {
+      loadServicos();
+    }
+  }, [getServicos, isOpen]);
 
   // Filtrar profissionais válidos para evitar valores vazios
   const validProfissionais = profissionais.filter(prof => 
@@ -51,12 +66,15 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Corrigir timezone da data - usar data local diretamente
+    const localDate = new Date(formData.data.getTime() - (formData.data.getTimezoneOffset() * 60000));
+
     const transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'> = {
       tipo: formData.tipo,
       nome: formData.nome || null,
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
-      data: format(formData.data, 'yyyy-MM-dd'), // Format as YYYY-MM-DD without timezone issues
+      data: format(localDate, 'yyyy-MM-dd'),
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null
@@ -73,7 +91,8 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
         data: new Date(),
         professional_id: 'despesa-nenhum-profissional',
         client_id: 'no-client',
-        product_id: 'no-product'
+        product_id: 'no-product',
+        service_id: 'no-service'
       });
       onClose();
     }
@@ -89,24 +108,56 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       data: new Date(),
       professional_id: 'despesa-nenhum-profissional',
       client_id: 'no-client',
-      product_id: 'no-product'
+      product_id: 'no-product',
+      service_id: 'no-service'
     });
     onClose();
   };
 
   const handleProductChange = (productId: string) => {
-    setFormData({ ...formData, product_id: productId });
-    
+    setFormData(prev => ({ ...prev, product_id: productId }));
+    calculateCombinedValue(productId, formData.service_id);
+  };
+
+  const handleServiceChange = (serviceId: string) => {
+    setFormData(prev => ({ ...prev, service_id: serviceId }));
+    calculateCombinedValue(formData.product_id, serviceId);
+  };
+
+  const calculateCombinedValue = (productId: string, serviceId: string) => {
+    let totalValue = 0;
+    let description = '';
+    const descriptionParts: string[] = [];
+
     if (productId !== 'no-product') {
       const selectedProduct = produtos.find(p => p.id === productId);
       if (selectedProduct) {
-        setFormData(prev => ({
-          ...prev,
-          product_id: productId,
-          descricao: `Venda de produto: ${selectedProduct.name}`,
-          valor: selectedProduct.price.toString()
-        }));
+        totalValue += selectedProduct.price;
+        descriptionParts.push(`Produto: ${selectedProduct.name}`);
       }
+    }
+
+    if (serviceId !== 'no-service') {
+      const selectedService = servicos.find(s => s.id === serviceId);
+      if (selectedService) {
+        totalValue += selectedService.preco;
+        descriptionParts.push(`Serviço: ${selectedService.nome}`);
+      }
+    }
+
+    if (descriptionParts.length > 0) {
+      description = descriptionParts.join(' + ');
+      setFormData(prev => ({
+        ...prev,
+        descricao: description,
+        valor: totalValue.toString()
+      }));
+    } else if (productId === 'no-product' && serviceId === 'no-service') {
+      setFormData(prev => ({
+        ...prev,
+        descricao: '',
+        valor: ''
+      }));
     }
   };
 
@@ -170,6 +221,26 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="servico">Serviço (Opcional)</Label>
+                <Select
+                  value={formData.service_id}
+                  onValueChange={handleServiceChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um serviço (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-service">Nenhum serviço</SelectItem>
+                    {servicos.map((servico) => (
+                      <SelectItem key={servico.id} value={servico.id}>
+                        {servico.nome} - R$ {servico.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="cliente">Cliente (Opcional)</Label>
                 <Select
                   value={formData.client_id}
@@ -202,7 +273,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
               placeholder={
                 formData.tipo === 'despesa' 
                   ? 'Detalhes adicionais (opcional)' 
-                  : 'Ex: Corte de cabelo, Manicure, etc.'
+                  : 'Descrição automática baseada na seleção de produto/serviço ou digite manualmente'
               }
               required={formData.tipo === 'receita'}
             />

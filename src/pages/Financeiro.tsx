@@ -10,10 +10,11 @@ import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { useSupabase } from '@/hooks/useSupabase';
 import { ProfessionalFilter } from '@/components/financeiro/ProfessionalFilter';
 import { DateRangeFilter } from '@/components/financeiro/DateRangeFilter';
+import { MonthNavigation } from '@/components/financeiro/MonthNavigation';
 import { TransacaoEditModal } from '@/components/financeiro/TransacaoEditModal';
 import { AdicionarTransacaoModal } from '@/components/financeiro/AdicionarTransacaoModal';
 import { DeleteConfirmationModal } from '@/components/common/DeleteConfirmationModal';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { type Transacao } from '@/hooks/useSupabase';
 import jsPDF from 'jspdf';
@@ -48,6 +49,19 @@ const Financeiro = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteTransacao, setDeleteTransacao] = useState<Transacao | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Aplicar filtro de mês atual automaticamente
+  React.useEffect(() => {
+    const now = new Date();
+    const startOfCurrentMonth = startOfMonth(now);
+    const endOfCurrentMonth = endOfMonth(now);
+    
+    if (!startDate && !endDate) {
+      setStartDate(startOfCurrentMonth);
+      setEndDate(endOfCurrentMonth);
+    }
+  }, [startDate, endDate, setStartDate, setEndDate]);
 
   // Carregar produtos
   React.useEffect(() => {
@@ -132,6 +146,27 @@ const Financeiro = () => {
         handleCloseDeleteModal();
       }
     }
+  };
+
+  const handlePreviousMonth = () => {
+    const prevMonth = subMonths(currentMonth, 1);
+    setCurrentMonth(prevMonth);
+    setStartDate(startOfMonth(prevMonth));
+    setEndDate(endOfMonth(prevMonth));
+  };
+
+  const handleNextMonth = () => {
+    const nextMonth = addMonths(currentMonth, 1);
+    setCurrentMonth(nextMonth);
+    setStartDate(startOfMonth(nextMonth));
+    setEndDate(endOfMonth(nextMonth));
+  };
+
+  const handleCurrentMonth = () => {
+    const now = new Date();
+    setCurrentMonth(now);
+    setStartDate(startOfMonth(now));
+    setEndDate(endOfMonth(now));
   };
 
   const handleExportPDF = () => {
@@ -310,6 +345,14 @@ const Financeiro = () => {
           </Card>
         </div>
 
+        {/* Navegação de Mês */}
+        <MonthNavigation
+          currentMonth={currentMonth}
+          onPreviousMonth={handlePreviousMonth}
+          onNextMonth={handleNextMonth}
+          onCurrentMonth={handleCurrentMonth}
+        />
+
         {/* Filtros */}
         <Card>
           <CardHeader>
@@ -320,8 +363,8 @@ const Financeiro = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Primeira linha de filtros */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Linha única de filtros organizados */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <ProfessionalFilter
                   value={selectedProfessionalId}
                   onChange={setSelectedProfessionalId}
@@ -342,21 +385,21 @@ const Financeiro = () => {
                     setEndDate(undefined);
                   }}
                 />
-              </div>
-              
-              {/* Segunda linha - Busca */}
-              <div className="space-y-2">
-                <Label htmlFor="search-filter">Buscar por Serviço, Cliente, Profissional ou Data</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    id="search-filter"
-                    type="text"
-                    placeholder="Digite nome, serviço, cliente, profissional ou data (dd/mm/aaaa)..."
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    className="pl-10"
-                  />
+
+                {/* Busca na terceira coluna */}
+                <div className="space-y-2">
+                  <Label htmlFor="search-filter">Buscar</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="search-filter"
+                      type="text"
+                      placeholder="Nome, serviço, cliente..."
+                      value={searchFilter}
+                      onChange={(e) => setSearchFilter(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -375,7 +418,7 @@ const Financeiro = () => {
                   </Badge>
                  )}
                  <Badge variant="secondary">
-                   Filtros de data ativados
+                   {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
                  </Badge>
               </div>
             )}
