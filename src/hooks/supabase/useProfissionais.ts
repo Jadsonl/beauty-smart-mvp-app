@@ -9,6 +9,7 @@ export interface Profissional {
   name: string;
   phone?: string;
   email?: string;
+  date_of_birth?: string;
   created_at?: string;
 }
 

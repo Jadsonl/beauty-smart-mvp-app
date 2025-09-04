@@ -48,6 +48,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
               selected={startDate}
               onSelect={onStartDateChange}
               initialFocus
+              className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
         </Popover>
@@ -74,6 +75,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
               selected={endDate}
               onSelect={onEndDateChange}
               initialFocus
+              className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
         </Popover>

@@ -36,11 +36,18 @@ export const ProductForm = ({
     unit: '',
     min_stock_level: 0,
     supplier_name: '',
+    purchaseDate: '' as string,
   });
   const [stockQuantity, setStockQuantity] = useState<number>(0);
 
   // Preencher os dados ao receber um produto para edição
   useEffect(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+
     if (editingProduct) {
       setFormData({
         name: editingProduct.name || '',
@@ -50,6 +57,7 @@ export const ProductForm = ({
         unit: editingProduct.unit || '',
         min_stock_level: editingProduct.min_stock_level || 0,
         supplier_name: editingProduct.supplier_name || '',
+        purchaseDate: ''
       });
       setStockQuantity(initialQuantity || 0);
     } else {
@@ -61,6 +69,7 @@ export const ProductForm = ({
         unit: '',
         min_stock_level: 0,
         supplier_name: '',
+        purchaseDate: todayStr
       });
       setStockQuantity(0);
     }

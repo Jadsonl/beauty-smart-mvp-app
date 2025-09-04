@@ -44,12 +44,22 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
 
   useEffect(() => {
     if (transacao) {
+      // Parse YYYY-MM-DD to local Date to avoid timezone shift
+      let parsedDate = new Date();
+      if (transacao.data) {
+        const m = (transacao.data as string).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) {
+          const [_, y, mo, d] = m;
+          parsedDate = new Date(Number(y), Number(mo) - 1, Number(d));
+        }
+      }
+
       setFormData({
         tipo: transacao.tipo,
         nome: transacao.nome || '',
         descricao: transacao.descricao,
         valor: transacao.valor.toString(),
-        data: new Date(transacao.data),
+        data: parsedDate,
         professional_id: transacao.professional_id || 'despesa-nenhum-profissional',
         client_id: transacao.client_id || 'no-client'
       });
@@ -65,12 +75,18 @@ export const TransacaoEditModal: React.FC<TransacaoEditModalProps> = ({
     e.preventDefault();
     if (!transacao) return;
 
+    // Garantir data exata selecionada (YYYY-MM-DD, sem fuso)
+    const y = formData.data.getFullYear();
+    const m = String(formData.data.getMonth() + 1).padStart(2, '0');
+    const d = String(formData.data.getDate()).padStart(2, '0');
+    const dateString = `${y}-${m}-${d}`;
+
     const updatedData: Partial<Transacao> = {
       tipo: formData.tipo,
       nome: formData.nome || null,
       descricao: formData.descricao,
       valor: parseFloat(formData.valor),
-      data: formData.data.toLocaleDateString('en-CA'), // Format as YYYY-MM-DD without timezone issues
+      data: dateString,
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       client_id: formData.client_id === 'no-client' ? null : formData.client_id
     };
