@@ -76,12 +76,19 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
       descricaoFinal = 'Venda';
     }
 
+    // Corrigir data - garantir que seja exatamente a data selecionada
+    const selectedDate = new Date(formData.data);
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+
     const transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'> = {
       tipo: formData.tipo,
       nome: formData.nome || null,
       descricao: descricaoFinal,
-      valor: parseFloat(formData.valor),
-      data: format(formData.data, 'yyyy-MM-dd'),
+      valor: parseFloat(formData.valor) * productQuantity,
+      data: dateString,
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null
@@ -168,8 +175,8 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     if (productId !== 'no-product') {
       const selectedProduct = produtos.find(p => p.id === productId);
       if (selectedProduct) {
-        totalValue += selectedProduct.price;
-        descriptionParts.push(`Produto: ${selectedProduct.name}`);
+        totalValue += selectedProduct.price * productQuantity;
+        descriptionParts.push(`Produto: ${selectedProduct.name} (${productQuantity}x)`);
       }
     }
 
@@ -199,7 +206,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Lançamento</DialogTitle>
         </DialogHeader>

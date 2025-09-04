@@ -21,7 +21,8 @@ const Profissionais = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    email: ''
+    email: '',
+    date_of_birth: ''
   });
 
   // Carregar profissionais do Supabase
@@ -38,7 +39,8 @@ const Profissionais = () => {
     setFormData({
       name: '',
       phone: '',
-      email: ''
+      email: '',
+      date_of_birth: ''
     });
     setEditingProfissional(null);
   };
@@ -49,7 +51,8 @@ const Profissionais = () => {
       setFormData({
         name: profissional.name,
         phone: profissional.phone || '',
-        email: profissional.email || ''
+        email: profissional.email || '',
+        date_of_birth: profissional.date_of_birth || ''
       });
     } else {
       resetForm();
@@ -74,7 +77,8 @@ const Profissionais = () => {
       const profissionalData = {
         name: formData.name,
         phone: formData.phone || undefined,
-        email: formData.email || undefined
+        email: formData.email || undefined,
+        date_of_birth: formData.date_of_birth || undefined
       };
 
       let success = false;
@@ -179,6 +183,16 @@ const Profissionais = () => {
                     placeholder="joao@exemplo.com"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date_of_birth">Data de Nascimento</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date_of_birth: e.target.value }))}
                   />
                 </div>
 
