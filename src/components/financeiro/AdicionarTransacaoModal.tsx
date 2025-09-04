@@ -13,6 +13,8 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { type Transacao, type Profissional, type Cliente, type Produto } from '@/hooks/useSupabase';
 import { useServicos, type Servico } from '@/hooks/supabase/useServicos';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdicionarTransacaoModalProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
   loading
 }) => {
   const { getServicos } = useServicos();
+  const { user } = useAuth();
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [formData, setFormData] = useState({
     tipo: 'receita' as 'receita' | 'despesa',
@@ -46,6 +49,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
     product_id: 'no-product',
     service_id: 'no-service'
   });
+  const [productQuantity, setProductQuantity] = useState<number>(1);
 
   // Carregar serviços
   React.useEffect(() => {
@@ -66,15 +70,18 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Corrigir timezone da data - usar data local diretamente
-    const localDate = new Date(formData.data.getTime() - (formData.data.getTimezoneOffset() * 60000));
+    // Garantir descrição válida para receitas
+    let descricaoFinal = formData.descricao?.trim() || '';
+    if (formData.tipo === 'receita' && descricaoFinal === '') {
+      descricaoFinal = 'Venda';
+    }
 
     const transacaoData: Omit<Transacao, 'id' | 'user_id' | 'created_at'> = {
       tipo: formData.tipo,
       nome: formData.nome || null,
-      descricao: formData.descricao,
+      descricao: descricaoFinal,
       valor: parseFloat(formData.valor),
-      data: format(localDate, 'yyyy-MM-dd'),
+      data: format(formData.data, 'yyyy-MM-dd'),
       professional_id: formData.professional_id === 'despesa-nenhum-profissional' ? null : formData.professional_id,
       client_id: formData.client_id === 'no-client' ? null : formData.client_id,
       agendamento_id: null
@@ -82,6 +89,34 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
 
     const success = await onSave(transacaoData);
     if (success) {
+      // Se foi uma venda de produto, atualizar inventário (subtrair quantidade)
+      try {
+        if (
+          user?.id &&
+          formData.tipo === 'receita' &&
+          formData.product_id !== 'no-product' &&
+          productQuantity > 0
+        ) {
+          const { data: inv, error: invErr } = await supabase
+            .from('product_inventory')
+            .select('id, quantity')
+            .eq('user_id', user.id)
+            .eq('product_id', formData.product_id)
+            .maybeSingle();
+
+          if (!invErr && inv) {
+            const newQty = Math.max(0, Number(inv.quantity || 0) - productQuantity);
+            await supabase
+              .from('product_inventory')
+              .update({ quantity: newQty })
+              .eq('id', inv.id)
+              .eq('user_id', user.id);
+          }
+        }
+      } catch (err) {
+        console.error('Falha ao atualizar inventário após venda:', err);
+      }
+
       // Resetar formulário
       setFormData({
         tipo: 'receita',
@@ -94,6 +129,7 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
         product_id: 'no-product',
         service_id: 'no-service'
       });
+      setProductQuantity(1);
       onClose();
     }
   };
@@ -219,6 +255,24 @@ export const AdicionarTransacaoModal: React.FC<AdicionarTransacaoModalProps> = (
                   </SelectContent>
                 </Select>
               </div>
+
+              {formData.product_id !== 'no-product' && (
+                <div className="space-y-2">
+                  <Label htmlFor="productQuantity">Quantidade</Label>
+                  <Input
+                    id="productQuantity"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={productQuantity}
+                    onChange={(e) => {
+                      const q = Math.max(1, parseInt(e.target.value || '1'));
+                      setProductQuantity(q);
+                      calculateCombinedValue(formData.product_id, formData.service_id);
+                    }}
+                  />
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Label htmlFor="servico">Serviço (Opcional)</Label>

@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from 'sonner';
 import { useSupabase, type Produto } from '@/hooks/useSupabase';
 import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
 
 interface ProductFormProps {
   isOpen: boolean;
